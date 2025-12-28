@@ -6,7 +6,7 @@
   import GraphCanvas from '$lib/components/graph/GraphCanvas.svelte';
   import AddNodeModal from '$lib/components/editor/AddNodeModal.svelte';
   import ConnectionModal from '$lib/components/editor/ConnectionModal.svelte';
-  import LayoutToggle from '$lib/components/ui/LayoutToggle.svelte';
+  import LayoutSwitcher from '$lib/components/ui/LayoutSwitcher.svelte';
   import { nodes, edges, loadData } from '$lib/stores/graph';
   import type { GraphNode, GraphData } from '$lib/types';
 
@@ -56,7 +56,7 @@
         type: node.type as GraphNode['type'],
         description: node.description,
         date: node.date,
-        url: node.url,
+        url: (node as any).url,
         x: centerX + Math.cos(angle) * radius,
         y: centerY + Math.sin(angle) * radius,
         vx: 0,
@@ -96,9 +96,9 @@
     <main class="flex-1 relative overflow-hidden">
       <GraphCanvas />
 
-      <!-- Layout toggle -->
-      <div class="absolute top-4 left-1/2 -translate-x-1/2">
-        <LayoutToggle />
+      <!-- Layout switcher -->
+      <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+        <LayoutSwitcher />
       </div>
 
       <!-- Instructions overlay -->

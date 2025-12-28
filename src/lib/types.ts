@@ -5,13 +5,21 @@
 // Node Types
 export type NodeType = 'goal' | 'skill' | 'project' | 'source' | 'cert' | 'concept';
 
+// Layout Types
+export type LayoutType = 'physics' | 'radial' | 'timeline' | 'cluster' | 'hierarchical';
+
 export interface GraphNode {
   id: string;
   label: string;
   type: NodeType;
   description?: string;
   date?: string;
+  endDate?: string;      // For timeline layout - duration range
   url?: string;
+  tags?: string[];       // For cluster layout - grouping
+  cluster?: string;      // For cluster layout - explicit cluster assignment
+  parent?: string;       // For hierarchy layout - explicit parent
+  level?: number;        // For hierarchy layout - computed depth
   x?: number;
   y?: number;
   vx?: number;
@@ -195,4 +203,58 @@ export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
   minDistance: 60,
   alphaDecay: 0.99,
   alphaMin: 0.001
+};
+
+// Layout configuration
+export interface LayoutConfig {
+  width: number;
+  height: number;
+  centerX: number;
+  centerY: number;
+  padding?: number;
+}
+
+export interface TimelineLayoutConfig extends LayoutConfig {
+  minDate?: Date;
+  maxDate?: Date;
+  swimLaneHeight?: number;
+}
+
+export interface ClusterLayoutConfig extends LayoutConfig {
+  clusterPadding?: number;
+  nodePadding?: number;
+}
+
+export interface HierarchyLayoutConfig extends LayoutConfig {
+  levelHeight?: number;
+  nodeSpacing?: number;
+}
+
+// Cluster data for rendering backgrounds
+export interface ClusterData {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  radius: number;
+  nodeCount: number;
+  color: string;
+}
+
+// Layout type labels
+export const LAYOUT_TYPE_LABELS: Record<LayoutType, string> = {
+  physics: 'Physics',
+  radial: 'Radial',
+  timeline: 'Timeline',
+  cluster: 'Cluster',
+  hierarchical: 'Hierarchy'
+};
+
+// Layout type descriptions
+export const LAYOUT_TYPE_DESCRIPTIONS: Record<LayoutType, string> = {
+  physics: 'Dynamic force-directed layout',
+  radial: 'Concentric rings from center',
+  timeline: 'Chronological progression',
+  cluster: 'Grouped by type or tags',
+  hierarchical: 'Tree structure with levels'
 };

@@ -3,6 +3,8 @@
   import { get } from 'svelte/store';
   import GraphNode from './GraphNode.svelte';
   import GraphEdge from './GraphEdge.svelte';
+  import TimelineAxis from './TimelineAxis.svelte';
+  import ClusterBackgrounds from './ClusterBackgrounds.svelte';
   import {
     nodes,
     edges,
@@ -14,12 +16,21 @@
     hoverNode,
     updateNode
   } from '$lib/stores/graph';
-  import { layoutMode } from '$lib/stores/layout';
+  import { layoutMode, clusterData, setClusterData } from '$lib/stores/layout';
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
   import { createSimulation } from '$lib/engine/physics';
-  import { computeRadialLayout, easeOutCubic } from '$lib/engine/layouts';
-  import type { GraphNode as GraphNodeType, Simulation } from '$lib/types';
+  import {
+    applyLayout,
+    computeRadialLayout,
+    computeTimelineLayout,
+    computeClusterLayout,
+    computeHierarchicalLayout,
+    getTimelineAxisData,
+    getClusterData,
+    easeOutCubic
+  } from '$lib/engine/layouts';
+  import type { GraphNode as GraphNodeType, Simulation, LayoutType, ClusterData } from '$lib/types';
 
   let svgElement: SVGSVGElement;
   let width = $state(800);
@@ -30,7 +41,16 @@
   let isRunning = $state(false);
   let isAnimating = $state(false);
   let hasInitialized = false;
-  let previousMode: string | null = null;
+  let previousMode: LayoutType | null = null;
+
+  // Timeline axis data
+  let timelineAxisData = $state<{
+    years: { year: number; x: number }[];
+    swimLanes: { type: any; label: string; y: number }[];
+  }>({ years: [], swimLanes: [] });
+
+  // Cluster background data
+  let clusterBackgrounds = $state<ClusterData[]>([]);
 
   onMount(() => {
     // Update dimensions
@@ -53,12 +73,7 @@
       const mode = get(layoutMode);
       if (currentNodes.length > 0 && width > 0 && height > 0 && !hasInitialized) {
         console.log('Initial layout with mode:', mode);
-        if (mode === 'radial') {
-          applyRadialLayout();
-        } else {
-          initializePositions();
-          startSimulation();
-        }
+        applyCurrentLayout(mode);
         hasInitialized = true;
         previousMode = mode;
       }
@@ -68,12 +83,7 @@
     const unsubscribe = layoutMode.subscribe((mode) => {
       if (hasInitialized && previousMode !== null && previousMode !== mode) {
         console.log('Mode changed:', previousMode, '->', mode);
-        if (mode === 'radial') {
-          stopSimulation();
-          applyRadialLayout();
-        } else {
-          startSimulation();
-        }
+        applyCurrentLayout(mode);
       }
       previousMode = mode;
     });
@@ -85,6 +95,70 @@
       unsubscribe();
     };
   });
+
+  function getLayoutConfig() {
+    return {
+      width,
+      height,
+      centerX: width / 2,
+      centerY: height / 2,
+      padding: 80
+    };
+  }
+
+  function applyCurrentLayout(mode: LayoutType) {
+    stopSimulation();
+
+    const currentNodes = get(nodes);
+    const currentEdges = get(edges);
+    const config = getLayoutConfig();
+
+    switch (mode) {
+      case 'physics':
+        initializePositions();
+        startSimulation();
+        // Clear overlays
+        timelineAxisData = { years: [], swimLanes: [] };
+        clusterBackgrounds = [];
+        break;
+
+      case 'radial':
+        const radialNodes = computeRadialLayout(currentNodes, currentEdges, config);
+        animateToPositions(radialNodes);
+        // Clear overlays
+        timelineAxisData = { years: [], swimLanes: [] };
+        clusterBackgrounds = [];
+        break;
+
+      case 'timeline':
+        const timelineNodes = computeTimelineLayout(currentNodes, currentEdges, config);
+        animateToPositions(timelineNodes);
+        // Update timeline axis data
+        timelineAxisData = getTimelineAxisData(currentNodes, config);
+        clusterBackgrounds = [];
+        break;
+
+      case 'cluster':
+        const clusterNodes = computeClusterLayout(currentNodes, currentEdges, config);
+        animateToPositions(clusterNodes);
+        // Update cluster backgrounds after animation
+        setTimeout(() => {
+          const layoutNodes = get(nodes);
+          clusterBackgrounds = getClusterData(layoutNodes, config);
+          setClusterData(clusterBackgrounds);
+        }, 650);
+        timelineAxisData = { years: [], swimLanes: [] };
+        break;
+
+      case 'hierarchical':
+        const hierarchyNodes = computeHierarchicalLayout(currentNodes, currentEdges, config);
+        animateToPositions(hierarchyNodes);
+        // Clear overlays
+        timelineAxisData = { years: [], swimLanes: [] };
+        clusterBackgrounds = [];
+        break;
+    }
+  }
 
   function initializePositions() {
     const currentNodes = get(nodes);
@@ -100,22 +174,6 @@
       };
     });
     nodes.set(updatedNodes);
-  }
-
-  function applyRadialLayout() {
-    const currentNodes = get(nodes);
-    const currentEdges = get(edges);
-
-    if (currentNodes.length === 0) return;
-
-    const positioned = computeRadialLayout(currentNodes, currentEdges, {
-      width,
-      height,
-      centerX: width / 2,
-      centerY: height / 2
-    });
-
-    animateToPositions(positioned);
   }
 
   function animateToPositions(targetNodes: GraphNodeType[]) {
@@ -138,7 +196,8 @@
           x: (start.x ?? 0) + ((target.x ?? 0) - (start.x ?? 0)) * eased,
           y: (start.y ?? 0) + ((target.y ?? 0) - (start.y ?? 0)) * eased,
           vx: 0,
-          vy: 0
+          vy: 0,
+          level: target.level // Preserve level for hierarchy
         };
       });
 
@@ -180,7 +239,7 @@
 
     const animate = () => {
       const currentMode = get(layoutMode);
-      if (!isRunning || currentMode === 'radial') return;
+      if (!isRunning || currentMode !== 'physics') return;
 
       if (simulation?.tick()) {
         const currentNodes = get(nodes);
@@ -252,8 +311,10 @@
     return !get(connectedNodeIds).has(nodeId);
   }
 
-  // Check if in radial mode
-  const isRadial = $derived(get(layoutMode) === 'radial');
+  // Check current mode for conditional rendering
+  const currentMode = $derived(get(layoutMode));
+  const showTimeline = $derived(currentMode === 'timeline');
+  const showClusters = $derived(currentMode === 'cluster');
 </script>
 
 <svelte:window onmouseup={handleMouseUp} onmousemove={handleMouseMove} />
@@ -273,6 +334,22 @@
     </pattern>
   </defs>
   <rect {width} {height} fill="url(#grid)" />
+
+  <!-- Timeline axis (only in timeline mode) -->
+  {#if $layoutMode === 'timeline' && timelineAxisData.years.length > 0}
+    <TimelineAxis
+      years={timelineAxisData.years}
+      swimLanes={timelineAxisData.swimLanes}
+      {width}
+      {height}
+      padding={80}
+    />
+  {/if}
+
+  <!-- Cluster backgrounds (only in cluster mode) -->
+  {#if $layoutMode === 'cluster' && clusterBackgrounds.length > 0}
+    <ClusterBackgrounds clusters={clusterBackgrounds} />
+  {/if}
 
   <!-- Radial glow centered on goal node -->
   {#each $nodes.filter((n) => n.type === 'goal') as goalNode}
