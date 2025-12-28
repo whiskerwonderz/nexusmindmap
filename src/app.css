@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+@theme {
+  /* Font family */
+  --font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Custom colors for graph themes - these are CSS variables that update with theme */
+  --color-background: #0a0a12;
+  --color-goal: #10b981;
+  --color-skill: #ec4899;
+  --color-project: #06b6d4;
+  --color-source: #8b5cf6;
+  --color-cert: #f59e0b;
+  --color-concept: #64748b;
+  --color-edge: #374151;
+  --color-edge-highlight: #6b7280;
+  --color-text: #ffffff;
+  --color-text-muted: #9ca3af;
+  --color-panel-bg: rgba(18, 18, 26, 0.95);
+  --color-panel-border: rgba(255, 255, 255, 0.1);
+  --color-input-bg: rgba(255, 255, 255, 0.05);
+  --color-button-primary: #3b82f6;
+  --color-button-hover: #2563eb;
+}
+
+/* Base styles */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  overflow: hidden;
+}
+
+/* Smooth transitions for theme changes */
+:root {
+  transition:
+    --color-background 300ms ease,
+    --color-goal 300ms ease,
+    --color-skill 300ms ease,
+    --color-project 300ms ease,
+    --color-source 300ms ease,
+    --color-cert 300ms ease,
+    --color-concept 300ms ease;
+}
+
+/* Custom utility classes that use our theme colors */
+@utility bg-graph-bg {
+  background-color: var(--color-background);
+}
+
+@utility text-graph-text {
+  color: var(--color-text);
+}
+
+@utility text-graph-muted {
+  color: var(--color-text-muted);
+}
+
+@utility bg-panel {
+  background-color: var(--color-panel-bg);
+}
+
+@utility border-panel {
+  border-color: var(--color-panel-border);
+}
+
+@utility bg-input {
+  background-color: var(--color-input-bg);
+}
+
+@utility bg-btn-primary {
+  background-color: var(--color-button-primary);
+}
+
+@utility hover-bg-btn-hover {
+  &:hover {
+    background-color: var(--color-button-hover);
+  }
+}
+
+/* Node type colors as utilities */
+@utility text-node-goal {
+  color: var(--color-goal);
+}
+
+@utility text-node-skill {
+  color: var(--color-skill);
+}
+
+@utility text-node-project {
+  color: var(--color-project);
+}
+
+@utility text-node-source {
+  color: var(--color-source);
+}
+
+@utility text-node-cert {
+  color: var(--color-cert);
+}
+
+@utility text-node-concept {
+  color: var(--color-concept);
+}
+
+@utility bg-node-goal {
+  background-color: var(--color-goal);
+}
+
+@utility bg-node-skill {
+  background-color: var(--color-skill);
+}
+
+@utility bg-node-project {
+  background-color: var(--color-project);
+}
+
+@utility bg-node-source {
+  background-color: var(--color-source);
+}
+
+@utility bg-node-cert {
+  background-color: var(--color-cert);
+}
+
+@utility bg-node-concept {
+  background-color: var(--color-concept);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
