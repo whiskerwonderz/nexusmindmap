@@ -153,33 +153,36 @@
       </div>
     </main>
 
-    <!-- Inspector: 280px fixed, collapsible -->
+    <!-- Inspector: collapsible -->
     <aside
-      class="border-l border-panel overflow-y-auto bg-panel/50 shrink-0 transition-all duration-300 relative"
-      class:w-70={!isInspectorMinimized}
-      class:w-10={isInspectorMinimized}
+      class="border-l border-panel bg-panel/50 shrink-0 transition-all duration-300 relative flex flex-col"
+      style:width={isInspectorMinimized ? '48px' : '280px'}
     >
       <!-- Minimize/Expand button -->
       <button
         type="button"
-        class="absolute top-3 left-2 z-10 p-1.5 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
+        class="m-2 rounded-md bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"
+        class:p-2={isInspectorMinimized}
+        class:p-1={!isInspectorMinimized}
         onclick={toggleInspector}
         title={isInspectorMinimized ? 'Expand inspector' : 'Minimize inspector'}
       >
-        <svg
-          class="w-4 h-4 transition-transform"
-          class:rotate-180={isInspectorMinimized}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
+        {#if isInspectorMinimized}
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        {:else}
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        {/if}
       </button>
 
       {#if !isInspectorMinimized}
-        <Inspector onAddConnection={openConnectionModal} />
+        <div class="flex-1 overflow-y-auto">
+          <Inspector onAddConnection={openConnectionModal} />
+        </div>
       {/if}
     </aside>
   </div>
