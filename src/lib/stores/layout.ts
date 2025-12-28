@@ -3,11 +3,37 @@
  * Manages switching between 5 layout modes
  */
 
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import type { LayoutType, ClusterData } from '$lib/types';
 
 // Default to radial layout for clear visualization
 export const layoutMode = writable<LayoutType>('radial');
+
+// Timeline-specific state
+export interface TimelineRange {
+  start: number; // 0-1 percentage
+  end: number;   // 0-1 percentage
+}
+
+export interface TimelineState {
+  range: TimelineRange;
+  isPlaying: boolean;
+  playProgress: number; // 0-1, current position in animation
+  hoverX: number | null; // X position for vertical line
+  minDate: number; // timestamp
+  maxDate: number; // timestamp
+}
+
+const defaultTimelineState: TimelineState = {
+  range: { start: 0, end: 1 },
+  isPlaying: false,
+  playProgress: 0,
+  hoverX: null,
+  minDate: Date.now(),
+  maxDate: Date.now()
+};
+
+export const timelineState = writable<TimelineState>(defaultTimelineState);
 
 // Re-export LayoutMode as alias for backwards compatibility
 export type LayoutMode = LayoutType;
@@ -27,6 +53,37 @@ export const isStaticMode = derived(layoutMode, $mode => $mode !== 'physics');
 
 // Store for cluster background data (used by cluster layout)
 export const clusterData = writable<ClusterData[]>([]);
+
+// Store for focused cluster (for zoom/focus effect)
+export const focusedClusterId = writable<string | null>(null);
+
+// Store for expanded clusters
+export const expandedClusters = writable<Set<string>>(new Set());
+
+// Cluster interaction functions
+export function focusCluster(clusterId: string | null): void {
+  focusedClusterId.set(clusterId);
+}
+
+export function toggleClusterExpand(clusterId: string): void {
+  expandedClusters.update(set => {
+    const newSet = new Set(set);
+    if (newSet.has(clusterId)) {
+      newSet.delete(clusterId);
+    } else {
+      newSet.add(clusterId);
+    }
+    return newSet;
+  });
+}
+
+export function isClusterExpanded(clusterId: string): boolean {
+  let expanded = false;
+  expandedClusters.subscribe(set => {
+    expanded = set.has(clusterId);
+  })();
+  return expanded;
+}
 
 // Store for timeline axis visibility
 export const showTimelineAxis = derived(layoutMode, $mode => $mode === 'timeline');
@@ -57,4 +114,40 @@ export function setLayoutMode(mode: LayoutType): void {
  */
 export function setClusterData(data: ClusterData[]): void {
   clusterData.set(data);
+}
+
+// Timeline functions
+export function setTimelineRange(start: number, end: number): void {
+  timelineState.update(state => ({
+    ...state,
+    range: { start: Math.max(0, Math.min(start, end)), end: Math.min(1, Math.max(start, end)) }
+  }));
+}
+
+export function setTimelineDateBounds(minDate: number, maxDate: number): void {
+  timelineState.update(state => ({
+    ...state,
+    minDate,
+    maxDate
+  }));
+}
+
+export function setTimelineHoverX(x: number | null): void {
+  timelineState.update(state => ({ ...state, hoverX: x }));
+}
+
+export function startTimelinePlay(): void {
+  timelineState.update(state => ({ ...state, isPlaying: true, playProgress: 0 }));
+}
+
+export function stopTimelinePlay(): void {
+  timelineState.update(state => ({ ...state, isPlaying: false }));
+}
+
+export function setTimelinePlayProgress(progress: number): void {
+  timelineState.update(state => ({ ...state, playProgress: Math.min(1, Math.max(0, progress)) }));
+}
+
+export function resetTimelineState(): void {
+  timelineState.set(defaultTimelineState);
 }

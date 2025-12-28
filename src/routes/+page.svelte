@@ -7,6 +7,7 @@
   import AddNodeModal from '$lib/components/editor/AddNodeModal.svelte';
   import ConnectionModal from '$lib/components/editor/ConnectionModal.svelte';
   import LayoutSwitcher from '$lib/components/ui/LayoutSwitcher.svelte';
+  import ZoomControls from '$lib/components/ui/ZoomControls.svelte';
   import { nodes, edges, loadData } from '$lib/stores/graph';
   import type { GraphNode, GraphData } from '$lib/types';
 
@@ -17,6 +18,29 @@
   let isAddNodeModalOpen = $state(false);
   let isConnectionModalOpen = $state(false);
   let connectionSourceNodeId = $state<string | null>(null);
+
+  // Inspector minimize state
+  let isInspectorMinimized = $state(false);
+
+  function toggleInspector() {
+    isInspectorMinimized = !isInspectorMinimized;
+  }
+
+  // Zoom state
+  let zoom = $state(1);
+  let canvasContainer = $state<HTMLElement | null>(null);
+
+  function handleZoomIn() {
+    zoom = Math.min(3, zoom + 0.25);
+  }
+
+  function handleZoomOut() {
+    zoom = Math.max(0.25, zoom - 0.25);
+  }
+
+  function handleZoomReset() {
+    zoom = 1;
+  }
 
   function openAddNodeModal() {
     isAddNodeModalOpen = true;
@@ -93,8 +117,13 @@
     </aside>
 
     <!-- Graph Canvas: flexible -->
-    <main class="flex-1 relative overflow-hidden">
-      <GraphCanvas />
+    <main bind:this={canvasContainer} class="flex-1 relative overflow-hidden bg-graph-bg">
+      <div
+        class="w-full h-full transition-transform duration-200 origin-center"
+        style:transform="scale({zoom})"
+      >
+        <GraphCanvas />
+      </div>
 
       <!-- Layout switcher -->
       <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10">
@@ -111,11 +140,47 @@
         <span class="mx-2">•</span>
         <span class="text-white/60">Drag</span> to move nodes
       </div>
+
+      <!-- Zoom controls -->
+      <div class="absolute bottom-4 right-4 z-10">
+        <ZoomControls
+          {zoom}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onReset={handleZoomReset}
+          fullscreenTarget={canvasContainer}
+        />
+      </div>
     </main>
 
-    <!-- Inspector: 280px fixed -->
-    <aside class="w-70 border-l border-panel overflow-y-auto bg-panel/50 shrink-0">
-      <Inspector onAddConnection={openConnectionModal} />
+    <!-- Inspector: 280px fixed, collapsible -->
+    <aside
+      class="border-l border-panel overflow-y-auto bg-panel/50 shrink-0 transition-all duration-300 relative"
+      class:w-70={!isInspectorMinimized}
+      class:w-10={isInspectorMinimized}
+    >
+      <!-- Minimize/Expand button -->
+      <button
+        type="button"
+        class="absolute top-3 left-2 z-10 p-1.5 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
+        onclick={toggleInspector}
+        title={isInspectorMinimized ? 'Expand inspector' : 'Minimize inspector'}
+      >
+        <svg
+          class="w-4 h-4 transition-transform"
+          class:rotate-180={isInspectorMinimized}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+
+      {#if !isInspectorMinimized}
+        <Inspector onAddConnection={openConnectionModal} />
+      {/if}
     </aside>
   </div>
 </div>

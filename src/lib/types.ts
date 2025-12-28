@@ -239,6 +239,8 @@ export interface ClusterData {
   radius: number;
   nodeCount: number;
   color: string;
+  nodeIds: string[];  // IDs of nodes in this cluster
+  isExpanded?: boolean;  // Whether cluster is in expanded state
 }
 
 // Layout type labels

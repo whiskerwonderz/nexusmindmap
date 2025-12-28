@@ -12,42 +12,49 @@
       "id": "goal",
       "label": "AI Agent Consultancy",
       "type": "goal",
+      "date": "2024-10-01",
       "description": "Building expertise to help businesses implement AI automation solutions"
     },
     {
       "id": "n8n",
       "label": "n8n",
       "type": "skill",
+      "date": "2024-10-15",
       "description": "Workflow automation platform for building AI agents"
     },
     {
       "id": "agents",
       "label": "Agent Architecture",
       "type": "skill",
+      "date": "2024-11-10",
       "description": "Designing multi-step AI agent workflows"
     },
     {
       "id": "rag",
       "label": "RAG Systems",
       "type": "skill",
+      "date": "2024-11-20",
       "description": "Retrieval-Augmented Generation for knowledge-powered AI"
     },
     {
       "id": "python",
       "label": "Python",
       "type": "skill",
+      "date": "2024-10-05",
       "description": "Programming language for AI/ML development"
     },
     {
       "id": "prompting",
       "label": "Prompt Engineering",
       "type": "skill",
+      "date": "2024-10-20",
       "description": "Crafting effective prompts for LLMs"
     },
     {
       "id": "mcp",
       "label": "MCP Protocol",
       "type": "skill",
+      "date": "2024-12-18",
       "description": "Model Context Protocol for AI tool integration"
     },
     {
@@ -159,60 +166,70 @@
       "id": "src-nick",
       "label": "Nick's YT Course",
       "type": "source",
+      "date": "2024-10-16",
       "description": "YouTube course on n8n fundamentals"
     },
     {
       "id": "src-nate",
       "label": "Nate's Tutorials",
       "type": "source",
+      "date": "2024-10-25",
       "description": "Advanced n8n tutorials and patterns"
     },
     {
       "id": "src-skool",
       "label": "AI Automation Society",
       "type": "source",
+      "date": "2024-11-05",
       "description": "Community for AI automation practitioners"
     },
     {
       "id": "src-ztm",
       "label": "ZTM RAG Course",
       "type": "source",
+      "date": "2024-11-22",
       "description": "Zero to Mastery RAG implementation course"
     },
     {
       "id": "src-google",
       "label": "Google Skills",
       "type": "source",
+      "date": "2024-10-08",
       "description": "Google's AI learning platform"
     },
     {
       "id": "src-maker",
       "label": "Maker School",
       "type": "source",
+      "date": "2024-09-15",
       "description": "Entrepreneurship and maker education"
     },
     {
       "id": "concept-webhooks",
       "label": "Webhooks",
       "type": "concept",
+      "date": "2024-10-28",
       "description": "Event-driven API integration pattern"
     },
     {
       "id": "concept-error",
       "label": "Error Handling",
       "type": "concept",
+      "date": "2024-11-02",
       "description": "Robust error management in workflows"
     },
     {
       "id": "concept-hitl",
       "label": "Human in Loop",
       "type": "concept",
+      "date": "2024-11-15",
       "description": "Human oversight in AI decision-making"
     },
     {
       "id": "concept-multi",
       "label": "Multi-Agent",
       "type": "concept",
+      "date": "2024-12-01",
       "description": "Coordinating multiple AI agents"
     }
   ],
@@ -223,7 +240,7 @@
     { "id": "e4", "from": "goal", "to": "python", "label": "requires" },
     { "id": "e5", "from": "goal", "to": "prompting", "label": "requires" },
     { "id": "e6", "from": "goal", "to": "mcp", "label": "requires" },
-    
+
     { "id": "e10", "from": "n8n", "to": "cert-n8n", "label": "achieved" },
     { "id": "e11", "from": "n8n", "to": "src-nick", "label": "learned from" },
     { "id": "e12", "from": "n8n", "to": "src-nate", "label": "learned from" },
@@ -234,36 +251,36 @@
     { "id": "e17", "from": "n8n", "to": "build-events", "label": "built" },
     { "id": "e18", "from": "n8n", "to": "concept-webhooks", "label": "uses" },
     { "id": "e19", "from": "n8n", "to": "concept-error", "label": "uses" },
-    
+
     { "id": "e20", "from": "agents", "to": "src-skool", "label": "learned from" },
     { "id": "e21", "from": "agents", "to": "build-sales", "label": "built" },
     { "id": "e22", "from": "agents", "to": "build-proposal", "label": "built" },
     { "id": "e23", "from": "agents", "to": "build-onboarding", "label": "built" },
     { "id": "e24", "from": "agents", "to": "concept-multi", "label": "pattern" },
     { "id": "e25", "from": "agents", "to": "concept-hitl", "label": "pattern" },
-    
+
     { "id": "e30", "from": "rag", "to": "src-ztm", "label": "learned from" },
     { "id": "e31", "from": "rag", "to": "build-rag", "label": "built" },
     { "id": "e32", "from": "rag", "to": "build-gemini", "label": "built" },
-    
+
     { "id": "e40", "from": "python", "to": "cert-python", "label": "achieved" },
     { "id": "e41", "from": "python", "to": "src-google", "label": "learned from" },
-    
+
     { "id": "e50", "from": "prompting", "to": "cert-google", "label": "achieved" },
     { "id": "e51", "from": "prompting", "to": "src-google", "label": "learned from" },
     { "id": "e52", "from": "prompting", "to": "build-aurora", "label": "built" },
-    
+
     { "id": "e60", "from": "mcp", "to": "build-mcp", "label": "built" },
-    
+
     { "id": "e70", "from": "src-nick", "to": "src-nate", "label": "complements" },
     { "id": "e71", "from": "src-skool", "to": "build-news", "label": "tutorial" },
     { "id": "e72", "from": "src-maker", "to": "goal", "label": "foundation" },
-    
+
     { "id": "e80", "from": "build-sales", "to": "build-proposal", "label": "related" },
     { "id": "e81", "from": "build-proposal", "to": "build-onboarding", "label": "related" },
     { "id": "e82", "from": "build-rag", "to": "build-gemini", "label": "related" },
     { "id": "e83", "from": "build-news", "to": "build-events", "label": "related" },
-    
+
     { "id": "e90", "from": "concept-webhooks", "to": "concept-error", "label": "related" },
     { "id": "e91", "from": "concept-hitl", "to": "concept-multi", "label": "pattern" }
   ]
