@@ -154,12 +154,12 @@ export interface ConnectionFormData {
 export const NODE_TYPES: readonly NodeType[] = ['goal', 'skill', 'project', 'source', 'cert', 'concept'];
 
 export const NODE_TYPE_LABELS: Record<NodeType, string> = {
-  goal: 'Goal',
-  skill: 'Skill',
-  project: 'Project',
-  source: 'Source',
-  cert: 'Certification',
-  concept: 'Concept'
+  goal: 'Goals',
+  skill: 'Skills',
+  project: 'Projects',
+  source: 'Sources',
+  cert: 'Milestones',
+  concept: 'Concepts'
 };
 
 export const NODE_SIZES: Record<NodeType, number> = {

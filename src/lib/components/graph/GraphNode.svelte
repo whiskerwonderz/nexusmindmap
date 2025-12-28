@@ -94,12 +94,6 @@
 
 <style>
   .graph-node {
-    transition:
-      opacity 0.2s ease,
-      transform 0.1s ease;
-  }
-
-  .graph-node:hover {
-    transform: scale(1.02);
+    transition: opacity 0.2s ease;
   }
 </style>

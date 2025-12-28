@@ -1,6 +1,34 @@
 <script lang="ts">
-  import { nodes, edges, title } from '$lib/stores/graph';
+  import { tick } from 'svelte';
+  import { nodes, edges, title, setTitle } from '$lib/stores/graph';
   import ThemeSwitcher from './ui/ThemeSwitcher.svelte';
+
+  let isEditing = $state(false);
+  let editValue = $state('');
+  let inputRef = $state<HTMLInputElement | null>(null);
+
+  async function startEditing() {
+    editValue = $title;
+    isEditing = true;
+    await tick();
+    inputRef?.focus();
+    inputRef?.select();
+  }
+
+  function saveTitle() {
+    if (editValue.trim()) {
+      setTitle(editValue.trim());
+    }
+    isEditing = false;
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      saveTitle();
+    } else if (e.key === 'Escape') {
+      isEditing = false;
+    }
+  }
 </script>
 
 <header class="h-14 px-6 flex items-center justify-between border-b border-panel">
@@ -28,7 +56,25 @@
 
     <!-- Title -->
     <div class="h-5 w-px bg-white/10"></div>
-    <span class="text-sm text-graph-muted">{$title}</span>
+    {#if isEditing}
+      <input
+        bind:this={inputRef}
+        type="text"
+        bind:value={editValue}
+        onblur={saveTitle}
+        onkeydown={handleKeydown}
+        class="text-sm bg-input border border-panel rounded px-2 py-1 focus:outline-none focus:border-white/20 min-w-[200px]"
+      />
+    {:else}
+      <button
+        type="button"
+        class="text-sm text-graph-muted hover:text-white transition-colors cursor-text"
+        onclick={startEditing}
+        title="Click to edit title"
+      >
+        {$title}
+      </button>
+    {/if}
   </div>
 
   <div class="flex items-center gap-4">

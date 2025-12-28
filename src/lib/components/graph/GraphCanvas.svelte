@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import GraphNode from './GraphNode.svelte';
   import GraphEdge from './GraphEdge.svelte';
@@ -14,9 +14,11 @@
     hoverNode,
     updateNode
   } from '$lib/stores/graph';
+  import { layoutMode } from '$lib/stores/layout';
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
   import { createSimulation } from '$lib/engine/physics';
+  import { computeRadialLayout, easeOutCubic } from '$lib/engine/layouts';
   import type { GraphNode as GraphNodeType, Simulation } from '$lib/types';
 
   let svgElement: SVGSVGElement;
@@ -26,68 +28,147 @@
   let animationFrame: number | null = null;
   let draggedNode: GraphNodeType | null = $state(null);
   let isRunning = $state(false);
+  let isAnimating = $state(false);
+  let hasInitialized = false;
+  let previousMode: string | null = null;
 
-  // Track dimensions
   onMount(() => {
-    const updateDimensions = () => {
+    // Update dimensions
+    if (svgElement?.parentElement) {
+      width = svgElement.parentElement.clientWidth;
+      height = svgElement.parentElement.clientHeight;
+    }
+
+    const handleResize = () => {
       if (svgElement?.parentElement) {
         width = svgElement.parentElement.clientWidth;
         height = svgElement.parentElement.clientHeight;
-        console.log('Dimensions updated:', width, height);
       }
     };
+    window.addEventListener('resize', handleResize);
 
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-
-    // Initialize node positions to canvas center after dimensions are known
-    const currentNodes = get(nodes);
-    if (currentNodes.length > 0 && width > 0 && height > 0) {
-      console.log('Repositioning nodes to canvas center:', width/2, height/2);
-      const updatedNodes = currentNodes.map((node, i) => {
-        const angle = (i / currentNodes.length) * Math.PI * 2;
-        const radius = node.type === 'goal' ? 0 : 150 + Math.random() * 100;
-        return {
-          ...node,
-          x: width / 2 + Math.cos(angle) * radius,
-          y: height / 2 + Math.sin(angle) * radius,
-          vx: 0,
-          vy: 0
-        };
-      });
-      nodes.set(updatedNodes);
-    }
-
-    // Subscribe to nodes changes to start simulation
-    const unsubscribe = nodes.subscribe(($nodes) => {
-      console.log('Nodes changed:', $nodes.length);
-      if (width > 0 && height > 0 && $nodes.length > 0 && !isRunning) {
-        startSimulation();
+    // Initial layout after a small delay to ensure dimensions are set
+    setTimeout(() => {
+      const currentNodes = get(nodes);
+      const mode = get(layoutMode);
+      if (currentNodes.length > 0 && width > 0 && height > 0 && !hasInitialized) {
+        console.log('Initial layout with mode:', mode);
+        if (mode === 'radial') {
+          applyRadialLayout();
+        } else {
+          initializePositions();
+          startSimulation();
+        }
+        hasInitialized = true;
+        previousMode = mode;
       }
+    }, 100);
+
+    // Subscribe to mode changes
+    const unsubscribe = layoutMode.subscribe((mode) => {
+      if (hasInitialized && previousMode !== null && previousMode !== mode) {
+        console.log('Mode changed:', previousMode, '->', mode);
+        if (mode === 'radial') {
+          stopSimulation();
+          applyRadialLayout();
+        } else {
+          startSimulation();
+        }
+      }
+      previousMode = mode;
     });
 
     return () => {
-      window.removeEventListener('resize', updateDimensions);
+      window.removeEventListener('resize', handleResize);
       if (animationFrame) cancelAnimationFrame(animationFrame);
       simulation?.stop();
       unsubscribe();
     };
   });
 
-  function startSimulation() {
-    console.log('Starting simulation with', get(nodes).length, 'nodes');
+  function initializePositions() {
+    const currentNodes = get(nodes);
+    const updatedNodes = currentNodes.map((node, i) => {
+      const angle = (i / currentNodes.length) * Math.PI * 2;
+      const radius = node.type === 'goal' ? 0 : 150 + Math.random() * 100;
+      return {
+        ...node,
+        x: width / 2 + Math.cos(angle) * radius,
+        y: height / 2 + Math.sin(angle) * radius,
+        vx: 0,
+        vy: 0
+      };
+    });
+    nodes.set(updatedNodes);
+  }
 
-    // Stop existing
-    if (simulation) {
-      simulation.stop();
-      isRunning = false;
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
+  function applyRadialLayout() {
+    const currentNodes = get(nodes);
+    const currentEdges = get(edges);
+
+    if (currentNodes.length === 0) return;
+
+    const positioned = computeRadialLayout(currentNodes, currentEdges, {
+      width,
+      height,
+      centerX: width / 2,
+      centerY: height / 2
+    });
+
+    animateToPositions(positioned);
+  }
+
+  function animateToPositions(targetNodes: GraphNodeType[]) {
+    if (isAnimating) return;
+
+    const startNodes = get(nodes).map(n => ({ ...n }));
+    const duration = 600;
+    const startTime = performance.now();
+    isAnimating = true;
+
+    function animate(currentTime: number) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOutCubic(progress);
+
+      const interpolated = startNodes.map((start) => {
+        const target = targetNodes.find(t => t.id === start.id) || start;
+        return {
+          ...start,
+          x: (start.x ?? 0) + ((target.x ?? 0) - (start.x ?? 0)) * eased,
+          y: (start.y ?? 0) + ((target.y ?? 0) - (start.y ?? 0)) * eased,
+          vx: 0,
+          vy: 0
+        };
+      });
+
+      nodes.set(interpolated);
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        isAnimating = false;
         animationFrame = null;
       }
     }
 
-    // Create new simulation
+    animationFrame = requestAnimationFrame(animate);
+  }
+
+  function stopSimulation() {
+    if (simulation) {
+      simulation.stop();
+      isRunning = false;
+    }
+    if (animationFrame && !isAnimating) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
+  }
+
+  function startSimulation() {
+    stopSimulation();
+
     simulation = createSimulation(
       () => get(nodes),
       () => get(edges),
@@ -98,10 +179,10 @@
     isRunning = true;
 
     const animate = () => {
-      if (!isRunning) return;
+      const currentMode = get(layoutMode);
+      if (!isRunning || currentMode === 'radial') return;
 
       if (simulation?.tick()) {
-        // Create new node objects to trigger full reactivity (including edges)
         const currentNodes = get(nodes);
         const updatedNodes = currentNodes.map(node => ({
           ...node,
@@ -122,7 +203,11 @@
     event.preventDefault();
     event.stopPropagation();
     draggedNode = node;
-    simulation?.reheat(0.15);
+
+    const currentMode = get(layoutMode);
+    if (currentMode === 'physics') {
+      simulation?.reheat(0.15);
+    }
   }
 
   function handleMouseMove(event: MouseEvent) {
@@ -132,12 +217,7 @@
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    updateNode(draggedNode.id, {
-      x,
-      y,
-      vx: 0,
-      vy: 0
-    });
+    updateNode(draggedNode.id, { x, y, vx: 0, vy: 0 });
   }
 
   function handleMouseUp() {
@@ -171,6 +251,9 @@
     if (!hasActiveNode) return false;
     return !get(connectedNodeIds).has(nodeId);
   }
+
+  // Check if in radial mode
+  const isRadial = $derived(get(layoutMode) === 'radial');
 </script>
 
 <svelte:window onmouseup={handleMouseUp} onmousemove={handleMouseMove} />
@@ -195,16 +278,8 @@
   {#each $nodes.filter((n) => n.type === 'goal') as goalNode}
     <defs>
       <radialGradient id="center-glow" cx="50%" cy="50%" r="50%">
-        <stop
-          offset="0%"
-          stop-color={getNodeColor(themeState.currentTheme, 'goal')}
-          stop-opacity="0.08"
-        />
-        <stop
-          offset="100%"
-          stop-color={getNodeColor(themeState.currentTheme, 'goal')}
-          stop-opacity="0"
-        />
+        <stop offset="0%" stop-color={getNodeColor(themeState.currentTheme, 'goal')} stop-opacity="0.08" />
+        <stop offset="100%" stop-color={getNodeColor(themeState.currentTheme, 'goal')} stop-opacity="0" />
       </radialGradient>
     </defs>
     <circle
@@ -242,8 +317,7 @@
         color={getNodeColor(themeState.currentTheme, node.type)}
         isSelected={$selectedNodeId === node.id}
         isHovered={$hoveredNodeId === node.id}
-        isConnected={$connectedNodeIds.has(node.id) &&
-          node.id !== ($hoveredNodeId ?? $selectedNodeId)}
+        isConnected={$connectedNodeIds.has(node.id) && node.id !== ($hoveredNodeId ?? $selectedNodeId)}
         isDimmed={isNodeDimmed(node.id)}
         onmouseenter={() => hoverNode(node.id)}
         onmouseleave={() => hoverNode(null)}

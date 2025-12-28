@@ -4,11 +4,37 @@
   import Sidebar from '$lib/components/editor/Sidebar.svelte';
   import Inspector from '$lib/components/editor/Inspector.svelte';
   import GraphCanvas from '$lib/components/graph/GraphCanvas.svelte';
+  import AddNodeModal from '$lib/components/editor/AddNodeModal.svelte';
+  import ConnectionModal from '$lib/components/editor/ConnectionModal.svelte';
+  import LayoutToggle from '$lib/components/ui/LayoutToggle.svelte';
   import { nodes, edges, loadData } from '$lib/stores/graph';
   import type { GraphNode, GraphData } from '$lib/types';
 
   // Import example data
   import exampleData from '$lib/data/example.json';
+
+  // Modal states
+  let isAddNodeModalOpen = $state(false);
+  let isConnectionModalOpen = $state(false);
+  let connectionSourceNodeId = $state<string | null>(null);
+
+  function openAddNodeModal() {
+    isAddNodeModalOpen = true;
+  }
+
+  function closeAddNodeModal() {
+    isAddNodeModalOpen = false;
+  }
+
+  function openConnectionModal(sourceNodeId?: string) {
+    connectionSourceNodeId = sourceNodeId ?? null;
+    isConnectionModalOpen = true;
+  }
+
+  function closeConnectionModal() {
+    isConnectionModalOpen = false;
+    connectionSourceNodeId = null;
+  }
 
   onMount(() => {
     console.log('=== onMount START ===');
@@ -63,12 +89,17 @@
   <div class="flex-1 flex overflow-hidden">
     <!-- Sidebar: 240px fixed -->
     <aside class="w-60 border-r border-panel overflow-y-auto bg-panel/50 shrink-0">
-      <Sidebar />
+      <Sidebar onAddNode={openAddNodeModal} />
     </aside>
 
     <!-- Graph Canvas: flexible -->
     <main class="flex-1 relative overflow-hidden">
       <GraphCanvas />
+
+      <!-- Layout toggle -->
+      <div class="absolute top-4 left-1/2 -translate-x-1/2">
+        <LayoutToggle />
+      </div>
 
       <!-- Instructions overlay -->
       <div
@@ -84,7 +115,15 @@
 
     <!-- Inspector: 280px fixed -->
     <aside class="w-70 border-l border-panel overflow-y-auto bg-panel/50 shrink-0">
-      <Inspector />
+      <Inspector onAddConnection={openConnectionModal} />
     </aside>
   </div>
 </div>
+
+<!-- Modals -->
+<AddNodeModal isOpen={isAddNodeModalOpen} onClose={closeAddNodeModal} />
+<ConnectionModal
+  isOpen={isConnectionModalOpen}
+  sourceNodeId={connectionSourceNodeId}
+  onClose={closeConnectionModal}
+/>

@@ -1,11 +1,98 @@
 <script lang="ts">
-  import { selectedNode, selectNode, getConnectedNodes } from '$lib/stores/graph';
+  import {
+    selectedNode,
+    selectNode,
+    getConnectedNodes,
+    getConnectedEdges,
+    updateNode,
+    deleteNode,
+    deleteEdge,
+    edges,
+    nodeMap
+  } from '$lib/stores/graph';
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
   import { NODE_TYPE_LABELS } from '$lib/types';
 
-  // Reactive derived values
-  $: connectedNodes = $selectedNode ? getConnectedNodes($selectedNode.id) : [];
+  interface Props {
+    onAddConnection?: (nodeId: string) => void;
+  }
+
+  let { onAddConnection }: Props = $props();
+
+  let showDeleteConfirm = $state(false);
+
+  // Editable form state
+  let editLabel = $state('');
+  let editDescription = $state('');
+  let editDate = $state('');
+  let editUrl = $state('');
+
+  // Track which node we're editing to reset form when selection changes
+  let editingNodeId = $state<string | null>(null);
+
+  // Reactive derived values - use $derived for Svelte 5
+  const connectedNodes = $derived($selectedNode ? getConnectedNodes($selectedNode.id) : []);
+  const connectedEdges = $derived($selectedNode ? getConnectedEdges($selectedNode.id) : []);
+
+  // Sync form state when selected node changes
+  $effect(() => {
+    if ($selectedNode && $selectedNode.id !== editingNodeId) {
+      editLabel = $selectedNode.label;
+      editDescription = $selectedNode.description ?? '';
+      editDate = $selectedNode.date ?? '';
+      editUrl = $selectedNode.url ?? '';
+      editingNodeId = $selectedNode.id;
+      showDeleteConfirm = false;
+    } else if (!$selectedNode) {
+      editingNodeId = null;
+      showDeleteConfirm = false;
+    }
+  });
+
+  function handleLabelChange() {
+    if ($selectedNode && editLabel.trim()) {
+      updateNode($selectedNode.id, { label: editLabel.trim() });
+    }
+  }
+
+  function handleDescriptionChange() {
+    if ($selectedNode) {
+      updateNode($selectedNode.id, { description: editDescription.trim() || undefined });
+    }
+  }
+
+  function handleDateChange() {
+    if ($selectedNode) {
+      updateNode($selectedNode.id, { date: editDate.trim() || undefined });
+    }
+  }
+
+  function handleUrlChange() {
+    if ($selectedNode) {
+      updateNode($selectedNode.id, { url: editUrl.trim() || undefined });
+    }
+  }
+
+  function handleDeleteNode() {
+    if ($selectedNode) {
+      deleteNode($selectedNode.id);
+      showDeleteConfirm = false;
+    }
+  }
+
+  function handleDeleteEdge(edgeId: string) {
+    deleteEdge(edgeId);
+  }
+
+  function getOtherNode(edge: { from: string; to: string }, currentNodeId: string) {
+    const otherId = edge.from === currentNodeId ? edge.to : edge.from;
+    return $nodeMap.get(otherId);
+  }
+
+  function getEdgeDirection(edge: { from: string; to: string }, currentNodeId: string): 'from' | 'to' {
+    return edge.from === currentNodeId ? 'to' : 'from';
+  }
 </script>
 
 <div class="h-full flex flex-col">
@@ -18,82 +105,199 @@
     {#if $selectedNode}
       {@const color = getNodeColor(themeState.currentTheme, $selectedNode.type)}
 
-      <!-- Node header -->
-      <div class="flex items-start gap-3 mb-4">
-        <div
-          class="w-10 h-10 rounded-xl flex items-center justify-center"
+      <!-- Node type badge -->
+      <div class="flex items-center gap-2 mb-4">
+        <span
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
           style:background="{color}20"
-          style:border="2px solid {color}"
+          style:color={color}
+          style:border="1px solid {color}40"
         >
-          <div class="w-4 h-4 rounded-full" style:background={color}></div>
-        </div>
-        <div class="flex-1 min-w-0">
-          <h3 class="font-semibold text-base truncate">{$selectedNode.label}</h3>
-          <p class="text-xs text-graph-muted uppercase tracking-wide">
-            {NODE_TYPE_LABELS[$selectedNode.type]}
-          </p>
-        </div>
+          <span class="w-2 h-2 rounded-full" style:background={color}></span>
+          {NODE_TYPE_LABELS[$selectedNode.type]}
+        </span>
       </div>
 
-      <!-- Description -->
-      {#if $selectedNode.description}
-        <div class="mb-4">
-          <div class="text-xs text-graph-muted uppercase tracking-wide mb-1">
-            Description
-          </div>
-          <p class="text-sm">{$selectedNode.description}</p>
-        </div>
-      {/if}
+      <!-- Label field -->
+      <div class="mb-4">
+        <label for="inspector-label" class="text-xs text-graph-muted uppercase tracking-wide mb-1.5 block">
+          Label
+        </label>
+        <input
+          id="inspector-label"
+          type="text"
+          bind:value={editLabel}
+          onblur={handleLabelChange}
+          onkeydown={(e) => e.key === 'Enter' && handleLabelChange()}
+          class="w-full px-3 py-2 rounded-lg bg-input border border-panel text-sm focus:outline-none focus:border-white/20"
+        />
+      </div>
 
-      <!-- Date -->
-      {#if $selectedNode.date}
-        <div class="mb-4">
-          <div class="text-xs text-graph-muted uppercase tracking-wide mb-1">Date</div>
-          <p class="text-sm">{$selectedNode.date}</p>
-        </div>
-      {/if}
+      <!-- Description field -->
+      <div class="mb-4">
+        <label for="inspector-description" class="text-xs text-graph-muted uppercase tracking-wide mb-1.5 block">
+          Description
+        </label>
+        <textarea
+          id="inspector-description"
+          bind:value={editDescription}
+          onblur={handleDescriptionChange}
+          placeholder="Add a description..."
+          rows="3"
+          class="w-full px-3 py-2 rounded-lg bg-input border border-panel text-sm focus:outline-none focus:border-white/20 resize-none"
+        ></textarea>
+      </div>
 
-      <!-- URL -->
-      {#if $selectedNode.url}
-        <div class="mb-4">
-          <div class="text-xs text-graph-muted uppercase tracking-wide mb-1">Link</div>
+      <!-- Date field -->
+      <div class="mb-4">
+        <label for="inspector-date" class="text-xs text-graph-muted uppercase tracking-wide mb-1.5 block">
+          Date
+        </label>
+        <input
+          id="inspector-date"
+          type="text"
+          bind:value={editDate}
+          onblur={handleDateChange}
+          onkeydown={(e) => e.key === 'Enter' && handleDateChange()}
+          placeholder="e.g., 2024-01"
+          class="w-full px-3 py-2 rounded-lg bg-input border border-panel text-sm focus:outline-none focus:border-white/20"
+        />
+      </div>
+
+      <!-- URL field -->
+      <div class="mb-4">
+        <label for="inspector-url" class="text-xs text-graph-muted uppercase tracking-wide mb-1.5 block">
+          URL
+        </label>
+        <input
+          id="inspector-url"
+          type="url"
+          bind:value={editUrl}
+          onblur={handleUrlChange}
+          onkeydown={(e) => e.key === 'Enter' && handleUrlChange()}
+          placeholder="https://..."
+          class="w-full px-3 py-2 rounded-lg bg-input border border-panel text-sm focus:outline-none focus:border-white/20"
+        />
+        {#if editUrl}
           <a
-            href={$selectedNode.url}
+            href={editUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="text-sm text-blue-400 hover:text-blue-300 underline break-all"
+            class="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mt-1.5"
           >
-            {$selectedNode.url}
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            Open link
           </a>
-        </div>
-      {/if}
+        {/if}
+      </div>
 
       <!-- Connections -->
-      {#if connectedNodes.length > 0}
-        <div class="mt-6">
-          <div class="text-xs text-graph-muted uppercase tracking-wide mb-2">
-            Connections ({connectedNodes.length})
-          </div>
-          <div class="flex flex-wrap gap-1.5">
-            {#each connectedNodes as connNode}
-              {@const connColor = getNodeColor(themeState.currentTheme, connNode.type)}
-              <button
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-opacity hover:opacity-80"
-                style:background="{connColor}20"
-                style:color={connColor}
-                style:border="1px solid {connColor}40"
-                onclick={() => selectNode(connNode.id)}
-              >
-                <span class="w-1.5 h-1.5 rounded-full" style:background={connColor}></span>
-                {connNode.label}
-              </button>
+      <div class="mt-6 pt-4 border-t border-panel">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs text-graph-muted uppercase tracking-wide">
+            Connections ({connectedEdges.length})
+          </span>
+          {#if onAddConnection}
+            <button
+              type="button"
+              class="text-xs text-blue-400 hover:text-blue-300"
+              onclick={() => onAddConnection?.($selectedNode!.id)}
+            >
+              + Add
+            </button>
+          {/if}
+        </div>
+
+        {#if connectedEdges.length > 0}
+          <div class="space-y-1.5">
+            {#each connectedEdges as edge}
+              {@const otherNode = getOtherNode(edge, $selectedNode.id)}
+              {@const direction = getEdgeDirection(edge, $selectedNode.id)}
+              {#if otherNode}
+                {@const connColor = getNodeColor(themeState.currentTheme, otherNode.type)}
+                <div
+                  class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 group"
+                >
+                  <span class="text-xs text-graph-muted">
+                    {direction === 'to' ? '→' : '←'}
+                  </span>
+                  <button
+                    type="button"
+                    class="flex-1 flex items-center gap-1.5 text-left text-sm hover:opacity-80 truncate"
+                    style:color={connColor}
+                    onclick={() => selectNode(otherNode.id)}
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0" style:background={connColor}></span>
+                    <span class="truncate">{otherNode.label}</span>
+                  </button>
+                  {#if edge.label}
+                    <span class="text-xs text-graph-muted truncate max-w-[60px]">{edge.label}</span>
+                  {/if}
+                  <button
+                    type="button"
+                    class="opacity-0 group-hover:opacity-100 text-graph-muted hover:text-red-400 transition-opacity"
+                    onclick={() => handleDeleteEdge(edge.id)}
+                    title="Remove connection"
+                  >
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+              {/if}
             {/each}
           </div>
-        </div>
-      {/if}
+        {:else}
+          <p class="text-xs text-graph-muted">No connections yet</p>
+        {/if}
+      </div>
+
+      <!-- Delete Node -->
+      <div class="mt-6 pt-4 border-t border-panel">
+        {#if showDeleteConfirm}
+          <div class="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+            <p class="text-sm text-red-400 mb-3">Delete "{$selectedNode.label}"?</p>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="flex-1 px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-medium transition-colors"
+                onclick={handleDeleteNode}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                class="flex-1 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs transition-colors"
+                onclick={() => showDeleteConfirm = false}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        {:else}
+          <button
+            type="button"
+            class="w-full px-3 py-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-graph-muted hover:text-red-400 text-sm transition-colors"
+            onclick={() => showDeleteConfirm = true}
+          >
+            Delete Node
+          </button>
+        {/if}
+      </div>
     {:else}
       <div class="text-center text-graph-muted text-sm py-8">
+        <svg class="w-12 h-12 mx-auto mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4" />
+          <path d="M12 8h.01" />
+        </svg>
         <p>Select a node to view details</p>
+        <p class="text-xs mt-1">Click on any node in the graph</p>
       </div>
     {/if}
   </div>
