@@ -1,6 +1,18 @@
 import type { BaseNode, TravelerLayout } from './common';
 
 // ============================================
+// DISPLAY MODE
+// ============================================
+
+/**
+ * Display mode for filtering travel entries
+ * - 'all': Show both journeys (multi-stop) and destinations (single-stop)
+ * - 'journeys': Show only multi-stop trips with routes
+ * - 'destinations': Show only single-stop visits (pins only, no arcs)
+ */
+export type DisplayMode = 'all' | 'journeys' | 'destinations';
+
+// ============================================
 // TRIP LOCATION
 // ============================================
 
@@ -61,6 +73,47 @@ export type TripCategory =
   | 'adventure';
 
 // ============================================
+// TRAVEL ENTRY (ALIAS + HELPERS)
+// ============================================
+
+/**
+ * TravelEntry is an alias for TripNode
+ * Used for clearer semantics when handling both journeys and destinations
+ */
+export type TravelEntry = TripNode;
+
+/**
+ * Check if a travel entry is a journey (multi-stop with route)
+ * @returns true if the entry has 2+ locations
+ */
+export function isJourney(entry: TripNode): boolean {
+  return entry.metadata.locations.length >= 2;
+}
+
+/**
+ * Check if a travel entry is a destination (single-stop, pin only)
+ * @returns true if the entry has exactly 1 location
+ */
+export function isDestination(entry: TripNode): boolean {
+  return entry.metadata.locations.length === 1;
+}
+
+/**
+ * Filter entries by display mode
+ */
+export function filterByDisplayMode(entries: TripNode[], mode: DisplayMode): TripNode[] {
+  switch (mode) {
+    case 'journeys':
+      return entries.filter(isJourney);
+    case 'destinations':
+      return entries.filter(isDestination);
+    case 'all':
+    default:
+      return entries;
+  }
+}
+
+// ============================================
 // TRAVELER SETTINGS
 // ============================================
 
@@ -68,6 +121,8 @@ export interface TravelerSettings {
   layout: TravelerLayout;
   homeBase?: TripLocation;
   yearFilter?: number;
+  /** Filter by entry type: all, journeys only, or destinations only */
+  displayMode: DisplayMode;
   colorScheme: ArcColorScheme;
   globeStyle: GlobeStyle;
   showArcs: boolean;
@@ -81,6 +136,7 @@ export type GlobeStyle = 'night' | 'dark' | 'satellite' | 'dotted';
 
 export const DEFAULT_TRAVELER_SETTINGS: TravelerSettings = {
   layout: 'globe',
+  displayMode: 'all',
   colorScheme: 'cosmic',
   globeStyle: 'night',
   showArcs: true,

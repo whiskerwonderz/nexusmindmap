@@ -5,7 +5,9 @@ import type {
   TravelStats,
   GlobeArc,
   GlobeMarker,
+  DisplayMode,
 } from '$lib/types/traveler';
+import { filterByDisplayMode, isJourney, isDestination } from '$lib/types/traveler';
 import { SAMPLE_TRIPS_2025, HOME_BASE } from '$lib/data/sampleTrips';
 import {
   calculateTravelStats,
@@ -34,6 +36,7 @@ const autoRotate = $derived(appStore.travelerSettings.autoRotate);
 const animateArcs = $derived(appStore.travelerSettings.animateArcs);
 const globeStyle = $derived(appStore.travelerSettings.globeStyle);
 const colorScheme = $derived(appStore.travelerSettings.colorScheme);
+const displayMode = $derived(appStore.travelerSettings.displayMode);
 
 /** Sorted trips */
 const sortedTrips = $derived(sortTripsByDate(allTrips));
@@ -42,12 +45,23 @@ const sortedTrips = $derived(sortTripsByDate(allTrips));
 const availableYears = $derived(getUniqueYears(allTrips));
 
 /** Filtered trips (by year if filter set) */
-const filteredTrips = $derived.by((): TripNode[] => {
+const yearFilteredTrips = $derived.by((): TripNode[] => {
   if (settings.yearFilter) {
     return filterTripsByYear(sortedTrips, settings.yearFilter);
   }
   return sortedTrips;
 });
+
+/** Filtered trips (by display mode: all, journeys, destinations) */
+const filteredTrips = $derived(
+  filterByDisplayMode(yearFilteredTrips, settings.displayMode)
+);
+
+/** Count of journeys (multi-stop trips) */
+const journeyCount = $derived(yearFilteredTrips.filter(isJourney).length);
+
+/** Count of destinations (single-stop visits) */
+const destinationCount = $derived(yearFilteredTrips.filter(isDestination).length);
 
 /** Travel statistics */
 const stats = $derived<TravelStats>(
@@ -146,6 +160,13 @@ function toggleAutoRotate(enabled: boolean): void {
   appStore.updateTravelerSettings({ autoRotate: enabled });
 }
 
+/**
+ * Set display mode (all, journeys, destinations)
+ */
+function setDisplayMode(mode: DisplayMode): void {
+  appStore.updateTravelerSettings({ displayMode: mode });
+}
+
 // ============================================
 // EXPORT STORE
 // ============================================
@@ -166,6 +187,11 @@ export const travelerStore = {
   get animateArcs() { return animateArcs; },
   get globeStyle() { return globeStyle; },
   get colorScheme() { return colorScheme; },
+  get displayMode() { return displayMode; },
+
+  // Entry type counts (for UI badges)
+  get journeyCount() { return journeyCount; },
+  get destinationCount() { return destinationCount; },
 
   // Actions
   loadSampleData,
@@ -176,6 +202,7 @@ export const travelerStore = {
   setHomeBase,
   setColorScheme,
   setGlobeStyle,
+  setDisplayMode,
   toggleArcAnimation,
   toggleAutoRotate,
 };

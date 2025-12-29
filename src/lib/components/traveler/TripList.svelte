@@ -1,23 +1,54 @@
 <script lang="ts">
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
+  import { toastStore } from '$lib/stores/toastStore.svelte';
   import type { TripNode } from '$lib/types/traveler';
 
   interface Props {
     onTripSelect?: (trip: TripNode) => void;
     onAddTrip?: () => void;
+    onEditTrip?: (trip: TripNode) => void;
     class?: string;
   }
 
   let {
     onTripSelect,
     onAddTrip,
+    onEditTrip,
     class: className = '',
   }: Props = $props();
 
   let searchQuery = $state('');
   let sortBy = $state<'date' | 'duration' | 'name'>('date');
+  let tripToDelete = $state<TripNode | null>(null);
+  let showDeleteConfirm = $state(false);
 
   const trips = $derived(travelerStore.trips);
+
+  function handleEditClick(e: Event, trip: TripNode): void {
+    e.stopPropagation();
+    onEditTrip?.(trip);
+  }
+
+  function handleDeleteClick(e: Event, trip: TripNode): void {
+    e.stopPropagation();
+    tripToDelete = trip;
+    showDeleteConfirm = true;
+  }
+
+  function confirmDelete(): void {
+    if (tripToDelete) {
+      const tripName = tripToDelete.label;
+      travelerStore.removeTrip(tripToDelete.id);
+      toastStore.success(`"${tripName}" deleted`);
+      tripToDelete = null;
+      showDeleteConfirm = false;
+    }
+  }
+
+  function cancelDelete(): void {
+    tripToDelete = null;
+    showDeleteConfirm = false;
+  }
 
   const filteredTrips = $derived.by(() => {
     let result = [...trips];
@@ -130,21 +161,32 @@
 
   <div class="trips-container">
     {#each filteredTrips as trip (trip.id)}
-      <button
-        type="button"
-        class="trip-card"
-        onclick={() => onTripSelect?.(trip)}
-      >
+      <div class="trip-card" role="button" tabindex="0" onclick={() => onTripSelect?.(trip)} onkeydown={(e) => e.key === 'Enter' && onTripSelect?.(trip)}>
         <div class="trip-header">
           <span class="trip-name">{trip.label}</span>
-          <span class="trip-duration">{trip.metadata.durationDays ?? 0}d</span>
+          <div class="trip-actions">
+            <span class="trip-duration">{trip.metadata.durationDays ?? 0}d</span>
+            {#if onEditTrip}
+              <button type="button" class="action-btn edit" onclick={(e) => handleEditClick(e, trip)} title="Edit trip">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            {/if}
+            <button type="button" class="action-btn delete" onclick={(e) => handleDeleteClick(e, trip)} title="Delete trip">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="trip-route">{getLocationSummary(trip)}</div>
         <div class="trip-meta">
           <span class="trip-dates">{formatDateRange(trip.metadata.startDate, trip.metadata.endDate)}</span>
           <span class="trip-countries">{trip.metadata.locations.length} stops</span>
         </div>
-      </button>
+      </div>
     {:else}
       <div class="empty-state">
         {#if searchQuery}
@@ -161,6 +203,20 @@
     {/each}
   </div>
 </div>
+
+<!-- Delete Confirmation Dialog -->
+{#if showDeleteConfirm && tripToDelete}
+  <div class="delete-overlay" onclick={cancelDelete} role="dialog" aria-modal="true">
+    <div class="delete-dialog" onclick={(e) => e.stopPropagation()}>
+      <h4>Delete Trip?</h4>
+      <p>Are you sure you want to delete "<strong>{tripToDelete.label}</strong>"? This action cannot be undone.</p>
+      <div class="delete-actions">
+        <button type="button" class="btn-cancel" onclick={cancelDelete}>Cancel</button>
+        <button type="button" class="btn-delete" onclick={confirmDelete}>Delete</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .trip-list {
@@ -335,6 +391,17 @@
     font-size: 0.9375rem;
     font-weight: 500;
     color: white;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .trip-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-shrink: 0;
   }
 
   .trip-duration {
@@ -344,6 +411,40 @@
     font-size: 0.6875rem;
     font-weight: 600;
     color: #fbbf24;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    opacity: 0;
+  }
+
+  .trip-card:hover .action-btn {
+    opacity: 1;
+  }
+
+  .action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .action-btn.edit:hover {
+    background: rgba(0, 212, 255, 0.2);
+    color: #00d4ff;
+  }
+
+  .action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
   }
 
   .trip-route {
@@ -385,5 +486,80 @@
 
   .add-first-btn:hover {
     background: rgba(0, 212, 255, 0.25);
+  }
+
+  /* Delete Confirmation Dialog */
+  .delete-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+
+  .delete-dialog {
+    background: #1a1a2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-width: 360px;
+    width: 90%;
+  }
+
+  .delete-dialog h4 {
+    margin: 0 0 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: white;
+  }
+
+  .delete-dialog p {
+    margin: 0 0 1.25rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+  }
+
+  .delete-dialog strong {
+    color: white;
+  }
+
+  .delete-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .btn-cancel,
+  .btn-delete {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-cancel {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-delete {
+    background: rgba(239, 68, 68, 0.9);
+    border: none;
+    color: white;
+  }
+
+  .btn-delete:hover {
+    background: rgba(239, 68, 68, 1);
   }
 </style>

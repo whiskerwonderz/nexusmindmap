@@ -1,15 +1,31 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { TravelGlobe, GlobeControls, GlobeStats } from '$lib/components/globe';
+  import { TravelMap, MapControls } from '$lib/components/map';
   import TripList from './TripList.svelte';
   import AddTripModal from './AddTripModal.svelte';
+  import EditTripModal from './EditTripModal.svelte';
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
+  import { appStore } from '$lib/stores/appStore.svelte';
   import type { GlobeMarker, TripNode } from '$lib/types/traveler';
+  import type { TravelerLayout } from '$lib/types/common';
 
   let globeComponent: TravelGlobe;
+  let mapComponent: TravelMap;
   let selectedMarker = $state<GlobeMarker | null>(null);
   let selectedTrip = $state<TripNode | null>(null);
   let isAddTripModalOpen = $state(false);
+  let isEditTripModalOpen = $state(false);
+  let tripToEdit = $state<TripNode | null>(null);
+
+  // Get current layout from app store
+  const layout = $derived(appStore.travelerSettings.layout);
+
+  const layoutOptions: { value: TravelerLayout; label: string }[] = [
+    { value: 'globe', label: 'Globe' },
+    { value: 'map', label: 'Map' },
+    { value: 'timeline', label: 'Timeline' },
+  ];
 
   onMount(() => {
     if (travelerStore.trips.length === 0) {
@@ -25,18 +41,34 @@
     selectedTrip = trip;
     const firstLocation = trip.metadata.locations[0];
     if (firstLocation) {
-      globeComponent?.focusOn(firstLocation.lat, firstLocation.lng, 1.5);
+      if (layout === 'globe') {
+        globeComponent?.focusOn(firstLocation.lat, firstLocation.lng, 1.5);
+      } else if (layout === 'map') {
+        mapComponent?.focusOn(firstLocation.lat, firstLocation.lng, 8);
+      }
     }
   }
 
   function handleResetView(): void {
-    globeComponent?.resetView();
+    if (layout === 'globe') {
+      globeComponent?.resetView();
+    } else if (layout === 'map') {
+      mapComponent?.resetView();
+    }
     selectedMarker = null;
     selectedTrip = null;
   }
 
   function handleFocusHome(): void {
-    globeComponent?.focusOnHome();
+    if (layout === 'globe') {
+      globeComponent?.focusOnHome();
+    } else if (layout === 'map') {
+      mapComponent?.focusOnHome();
+    }
+  }
+
+  function handleMapStyleChange(style: 'dark' | 'light' | 'terrain'): void {
+    mapComponent?.setMapStyle(style);
   }
 
   function openAddTripModal(): void {
@@ -47,6 +79,16 @@
     isAddTripModalOpen = false;
   }
 
+  function openEditTripModal(trip: TripNode): void {
+    tripToEdit = trip;
+    isEditTripModalOpen = true;
+  }
+
+  function closeEditTripModal(): void {
+    isEditTripModalOpen = false;
+    tripToEdit = null;
+  }
+
   function closeTripDetails(): void {
     selectedTrip = null;
   }
@@ -54,13 +96,67 @@
 
 <div class="traveler-view">
   <div class="main-content">
-    <!-- Globe Area -->
-    <div class="globe-area">
-      <TravelGlobe
-        bind:this={globeComponent}
-        onMarkerClick={handleMarkerClick}
-        class="globe"
-      />
+    <!-- Layout Switcher -->
+    <div class="layout-switcher">
+      <button
+        type="button"
+        class="layout-btn"
+        class:active={layout === 'globe'}
+        onclick={() => appStore.setTravelerLayout('globe')}
+      >
+        <svg class="layout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        <span class="layout-label">Globe</span>
+      </button>
+      <button
+        type="button"
+        class="layout-btn"
+        class:active={layout === 'map'}
+        onclick={() => appStore.setTravelerLayout('map')}
+      >
+        <svg class="layout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="m3 7 6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/>
+          <path d="M9 4v13M15 7v13"/>
+        </svg>
+        <span class="layout-label">Map</span>
+      </button>
+      <button
+        type="button"
+        class="layout-btn"
+        class:active={layout === 'timeline'}
+        onclick={() => appStore.setTravelerLayout('timeline')}
+        disabled
+      >
+        <svg class="layout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
+        </svg>
+        <span class="layout-label">Timeline</span>
+      </button>
+    </div>
+
+    <!-- Visualization Area -->
+    <div class="viz-area">
+      {#if layout === 'globe'}
+        <TravelGlobe
+          bind:this={globeComponent}
+          onMarkerClick={handleMarkerClick}
+          class="visualization"
+        />
+      {:else if layout === 'map'}
+        <TravelMap
+          bind:this={mapComponent}
+          onMarkerClick={handleMarkerClick}
+          class="visualization"
+        />
+      {:else}
+        <div class="timeline-placeholder">
+          <span class="placeholder-icon">📅</span>
+          <p>Timeline view coming soon</p>
+        </div>
+      {/if}
 
       {#if selectedMarker}
         <div class="location-info">
@@ -95,24 +191,34 @@
       {/if}
     </div>
 
-    <!-- Stats Below Globe -->
+    <!-- Stats Below Visualization -->
     <div class="stats-section">
       <GlobeStats />
     </div>
   </div>
 
   <aside class="sidebar">
-    <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
+    {#if layout === 'globe'}
+      <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
+    {:else if layout === 'map'}
+      <MapControls
+        onResetView={handleResetView}
+        onFocusHome={handleFocusHome}
+        onStyleChange={handleMapStyleChange}
+      />
+    {/if}
 
     <TripList
       onTripSelect={handleTripSelect}
       onAddTrip={openAddTripModal}
+      onEditTrip={openEditTripModal}
       class="trip-list-container"
     />
   </aside>
 </div>
 
 <AddTripModal isOpen={isAddTripModalOpen} onClose={closeAddTripModal} />
+<EditTripModal isOpen={isEditTripModalOpen} trip={tripToEdit} onClose={closeEditTripModal} />
 
 <style>
   .traveler-view {
@@ -133,7 +239,54 @@
     overflow: hidden;
   }
 
-  .globe-area {
+  /* Layout Switcher */
+  .layout-switcher {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .layout-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .layout-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .layout-btn.active {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.3);
+    color: #00d4ff;
+  }
+
+  .layout-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .layout-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .layout-label {
+    font-weight: 500;
+  }
+
+  .viz-area {
     position: relative;
     flex: 1 1 auto;
     min-height: 400px;
@@ -141,7 +294,30 @@
     overflow: hidden;
   }
 
-  :global(.globe) { width: 100%; height: 100%; }
+  :global(.visualization) { width: 100%; height: 100%; }
+
+  .timeline-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
+    color: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+  }
+
+  .placeholder-icon {
+    font-size: 3rem;
+    opacity: 0.5;
+  }
+
+  .timeline-placeholder p {
+    margin: 0;
+    font-size: 1rem;
+  }
 
   .stats-section {
     flex-shrink: 0;

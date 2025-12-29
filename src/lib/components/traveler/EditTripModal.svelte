@@ -3,18 +3,19 @@
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
   import { searchCitiesGlobal, resultToLocation, type CitySearchResult } from '$lib/utils/citySearch';
-  import { generateId, nowISO } from '$lib/types/common';
+  import { nowISO } from '$lib/types/common';
   import { calculateDuration } from '$lib/utils/tripUtils';
   import type { TripLocation, TripNode } from '$lib/types/traveler';
 
   interface Props {
     isOpen: boolean;
+    trip: TripNode | null;
     onClose: () => void;
   }
 
-  let { isOpen, onClose }: Props = $props();
+  let { isOpen, trip, onClose }: Props = $props();
 
-  // Form state
+  // Form state - initialized from trip
   let tripName = $state('');
   let startDate = $state('');
   let endDate = $state('');
@@ -27,6 +28,17 @@
   let showCityDropdown = $state(false);
   let isSearching = $state(false);
 
+  // Initialize form when trip changes
+  $effect(() => {
+    if (trip && isOpen) {
+      tripName = trip.label;
+      startDate = trip.metadata.startDate;
+      endDate = trip.metadata.endDate;
+      description = trip.description ?? '';
+      locations = [...trip.metadata.locations];
+    }
+  });
+
   // Form validation
   const isValid = $derived(
     tripName.trim().length > 0 &&
@@ -36,11 +48,22 @@
     locations.length > 0
   );
 
+  // Check if form has changes
+  const hasChanges = $derived(() => {
+    if (!trip) return false;
+    return (
+      tripName !== trip.label ||
+      startDate !== trip.metadata.startDate ||
+      endDate !== trip.metadata.endDate ||
+      description !== (trip.description ?? '') ||
+      JSON.stringify(locations) !== JSON.stringify(trip.metadata.locations)
+    );
+  });
+
   // React to city search changes
   $effect(() => {
     if (citySearch.trim().length >= 2) {
       isSearching = true;
-      // Use setTimeout to debounce the search
       const timeoutId = setTimeout(() => {
         const results = searchCitiesGlobal(citySearch, 15);
         cityResults = results;
@@ -80,17 +103,14 @@
   }
 
   function handleSubmit(): void {
-    if (!isValid) return;
+    if (!isValid || !trip) return;
 
-    const trip: TripNode = {
-      id: generateId(),
-      type: 'trip',
+    const updates: Partial<TripNode> = {
       label: tripName.trim(),
       description: description.trim() || undefined,
-      createdAt: nowISO(),
       updatedAt: nowISO(),
-      sourceMode: 'traveler',
       metadata: {
+        ...trip.metadata,
         startDate,
         endDate,
         locations,
@@ -98,38 +118,27 @@
       },
     };
 
-    travelerStore.addTrip(trip);
-    toastStore.success(`"${tripName.trim()}" added`);
-
-    resetForm();
+    travelerStore.updateTrip(trip.id, updates);
+    toastStore.success('Trip updated');
     onClose();
   }
 
-  function resetForm(): void {
-    tripName = '';
-    startDate = '';
-    endDate = '';
-    description = '';
-    locations = [];
+  function handleClose(): void {
     citySearch = '';
     cityResults = [];
     showCityDropdown = false;
     isSearching = false;
-  }
-
-  function handleClose(): void {
-    resetForm();
     onClose();
   }
 </script>
 
-<Modal isOpen={isOpen} title="Add New Trip" onClose={handleClose} size="lg">
+<Modal isOpen={isOpen} title="Edit Trip" onClose={handleClose} size="lg">
   <form class="trip-form" onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
     <!-- Trip Name -->
     <div class="form-group">
-      <label for="trip-name">Trip Name *</label>
+      <label for="edit-trip-name">Trip Name *</label>
       <input
-        id="trip-name"
+        id="edit-trip-name"
         type="text"
         bind:value={tripName}
         placeholder="e.g., Summer in Italy"
@@ -141,9 +150,9 @@
     <!-- Dates -->
     <div class="form-row">
       <div class="form-group">
-        <label for="start-date">Start Date *</label>
+        <label for="edit-start-date">Start Date *</label>
         <input
-          id="start-date"
+          id="edit-start-date"
           type="date"
           bind:value={startDate}
           class="form-input"
@@ -151,9 +160,9 @@
         />
       </div>
       <div class="form-group">
-        <label for="end-date">End Date *</label>
+        <label for="edit-end-date">End Date *</label>
         <input
-          id="end-date"
+          id="edit-end-date"
           type="date"
           bind:value={endDate}
           min={startDate}
@@ -165,9 +174,9 @@
 
     <!-- Description -->
     <div class="form-group">
-      <label for="description">Description (optional)</label>
+      <label for="edit-description">Description (optional)</label>
       <textarea
-        id="description"
+        id="edit-description"
         bind:value={description}
         placeholder="What made this trip special?"
         class="form-input form-textarea"
@@ -177,12 +186,12 @@
 
     <!-- Locations -->
     <div class="form-group">
-      <label for="city-search">Locations *</label>
+      <label for="edit-city-search">Locations *</label>
 
       <!-- Location Search -->
       <div class="city-search">
         <input
-          id="city-search"
+          id="edit-city-search"
           type="text"
           bind:value={citySearch}
           onfocus={() => { if (cityResults.length > 0) showCityDropdown = true; }}
@@ -264,7 +273,7 @@
         Cancel
       </button>
       <button type="submit" class="btn-primary" disabled={!isValid}>
-        Add Trip
+        Save Changes
       </button>
     </div>
   </form>

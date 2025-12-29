@@ -25,6 +25,7 @@
   "dependencies": {
     "country-state-city": "^3.2.1",
     "globe.gl": "^2.45.0",
+    "maplibre-gl": "^5.15.0",
     "three": "^0.182.0"
   }
 }

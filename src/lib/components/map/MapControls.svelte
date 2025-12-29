@@ -1,29 +1,27 @@
 <script lang="ts">
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
-  import type { ArcColorScheme, GlobeStyle, DisplayMode } from '$lib/types/traveler';
+  import type { ArcColorScheme, DisplayMode } from '$lib/types/traveler';
   import { exportTripsToJSON, exportTripsToCSV, importFromJSON, validateImportedTrips } from '$lib/utils/dataExport';
 
   interface Props {
     onResetView?: () => void;
     onFocusHome?: () => void;
+    onStyleChange?: (style: 'dark' | 'light' | 'terrain') => void;
     class?: string;
   }
 
-  let { onResetView, onFocusHome, class: className = '' }: Props = $props();
+  let { onResetView, onFocusHome, onStyleChange, class: className = '' }: Props = $props();
 
   let fileInput: HTMLInputElement;
   let isExporting = $state(false);
   let isImporting = $state(false);
+  let mapStyle = $state<'dark' | 'light' | 'terrain'>('dark');
 
-  // Use direct getters for reactive individual settings
-  const autoRotate = $derived(travelerStore.autoRotate);
-  const animateArcs = $derived(travelerStore.animateArcs);
-  const globeStyleValue = $derived(travelerStore.globeStyle);
-  const colorSchemeValue = $derived(travelerStore.colorScheme);
-  const displayModeValue = $derived(travelerStore.displayMode);
   const settings = $derived(travelerStore.settings);
   const availableYears = $derived(travelerStore.availableYears);
+  const displayModeValue = $derived(travelerStore.displayMode);
+  const colorSchemeValue = $derived(travelerStore.colorScheme);
   const journeyCount = $derived(travelerStore.journeyCount);
   const destinationCount = $derived(travelerStore.destinationCount);
 
@@ -40,12 +38,16 @@
     { value: 'mono', label: 'Mono', preview: ['#e2e8f0', '#94a3b8'] },
   ];
 
-  const globeStyles: { value: GlobeStyle; label: string }[] = [
-    { value: 'night', label: 'Night' },
-    { value: 'dark', label: 'Dark' },
-    { value: 'satellite', label: 'Satellite' },
-    { value: 'dotted', label: 'Topology' },
+  const mapStyles: { value: 'dark' | 'light' | 'terrain'; label: string }[] = [
+    { value: 'dark', label: 'Dark Matter' },
+    { value: 'light', label: 'Positron' },
+    { value: 'terrain', label: 'Voyager' },
   ];
+
+  function handleStyleChange(style: 'dark' | 'light' | 'terrain'): void {
+    mapStyle = style;
+    onStyleChange?.(style);
+  }
 
   function handleYearChange(e: Event): void {
     const target = e.target as HTMLSelectElement;
@@ -106,20 +108,22 @@
   }
 </script>
 
-<div class="globe-controls {className}">
+<div class="map-controls {className}">
   <div class="control-section">
     <h4 class="section-title">View</h4>
     <div class="button-group">
       <button type="button" class="control-btn" onclick={onResetView}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
         </svg>
-        Reset
+        Fit All
       </button>
       {#if travelerStore.homeBase}
         <button type="button" class="control-btn" onclick={onFocusHome}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
           Home
         </button>
@@ -171,22 +175,6 @@
     </div>
   </div>
 
-  <div class="control-section">
-    <h4 class="section-title">Animation</h4>
-    <div class="toggle-group">
-      <label class="toggle-item">
-        <input type="checkbox" checked={autoRotate}
-          onchange={() => travelerStore.toggleAutoRotate(!autoRotate)} />
-        <span>Auto-rotate</span>
-      </label>
-      <label class="toggle-item">
-        <input type="checkbox" checked={animateArcs}
-          onchange={() => travelerStore.toggleArcAnimation(!animateArcs)} />
-        <span>Animate arcs</span>
-      </label>
-    </div>
-  </div>
-
   {#if availableYears.length > 0}
     <div class="control-section">
       <h4 class="section-title">Filter by Year</h4>
@@ -198,7 +186,7 @@
   {/if}
 
   <div class="control-section">
-    <h4 class="section-title">Arc Colors</h4>
+    <h4 class="section-title">Route Colors</h4>
     <div class="color-schemes">
       {#each colorSchemes as scheme}
         <button type="button" class="color-scheme-btn" class:active={colorSchemeValue === scheme.value}
@@ -214,11 +202,11 @@
   </div>
 
   <div class="control-section">
-    <h4 class="section-title">Globe Style</h4>
-    <div class="globe-styles">
-      {#each globeStyles as style}
-        <button type="button" class="style-btn" class:active={globeStyleValue === style.value}
-          onclick={() => travelerStore.setGlobeStyle(style.value)}>
+    <h4 class="section-title">Map Style</h4>
+    <div class="map-styles">
+      {#each mapStyles as style}
+        <button type="button" class="style-btn" class:active={mapStyle === style.value}
+          onclick={() => handleStyleChange(style.value)}>
           {style.label}
         </button>
       {/each}
@@ -265,7 +253,7 @@
 </div>
 
 <style>
-  .globe-controls {
+  .map-controls {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
@@ -304,19 +292,6 @@
 
   .control-btn:hover { background: rgba(255, 255, 255, 0.1); }
 
-  .toggle-group { display: flex; flex-direction: column; gap: 0.5rem; }
-
-  .toggle-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.8);
-  }
-
-  .toggle-item input { accent-color: #00d4ff; }
-
   .year-select {
     padding: 0.5rem;
     background: rgba(255, 255, 255, 0.05);
@@ -325,7 +300,7 @@
     color: white;
   }
 
-  .color-schemes, .globe-styles {
+  .color-schemes, .map-styles {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;

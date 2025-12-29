@@ -7,7 +7,7 @@ import type {
   TripCategory,
   ArcColorScheme,
 } from '$lib/types/traveler';
-import { ARC_COLORS } from '$lib/types/traveler';
+import { ARC_COLORS, isJourney, isDestination } from '$lib/types/traveler';
 import { calculateTripDistance, distanceBetweenLocations } from './geo';
 import { generateId, nowISO } from '$lib/types/common';
 
@@ -192,6 +192,8 @@ export function calculateTravelStats(trips: TripNode[]): TravelStats {
 /**
  * Convert trips to globe arcs
  * Creates arcs between consecutive trip locations
+ * Note: Destinations (single-location entries) only contribute to
+ * travel arcs (from previous location), not internal route arcs
  */
 export function tripsToArcs(
   trips: TripNode[],
@@ -208,53 +210,64 @@ export function tripsToArcs(
     const trip = sortedTrips[i];
     const locations = [...trip.metadata.locations].sort((a, b) => a.order - b.order);
 
-    // Arc from previous location to first location of this trip
-    if (previousLocation && locations.length > 0) {
-      const firstLoc = locations[0];
-      const distance = distanceBetweenLocations(previousLocation, firstLoc);
+    if (locations.length === 0) continue;
 
-      arcs.push({
-        startLat: previousLocation.lat,
-        startLng: previousLocation.lng,
-        endLat: firstLoc.lat,
-        endLng: firstLoc.lng,
-        color: colors,
-        stroke: 2,
-        altitude: Math.min(0.5, Math.max(0.1, distance / 15000)),
-        label: `${previousLocation.city} → ${firstLoc.city}`,
-        tripId: trip.id,
-        dashLength: 0.6,
-        dashGap: 0.2,
-        dashAnimateTime: 2000 + i * 300,
-      });
+    // Arc from previous location to first location of this trip
+    // This creates the "travel between trips" arc
+    if (previousLocation) {
+      const firstLoc = locations[0];
+      // Only create arc if it's a different location
+      const isSameLocation =
+        previousLocation.lat === firstLoc.lat &&
+        previousLocation.lng === firstLoc.lng;
+
+      if (!isSameLocation) {
+        const distance = distanceBetweenLocations(previousLocation, firstLoc);
+
+        arcs.push({
+          startLat: previousLocation.lat,
+          startLng: previousLocation.lng,
+          endLat: firstLoc.lat,
+          endLng: firstLoc.lng,
+          color: colors,
+          stroke: 2,
+          altitude: Math.min(0.5, Math.max(0.1, distance / 15000)),
+          label: `${previousLocation.city} → ${firstLoc.city}`,
+          tripId: trip.id,
+          dashLength: 0.6,
+          dashGap: 0.2,
+          dashAnimateTime: 2000 + i * 300,
+        });
+      }
     }
 
-    // Arcs within the trip (multi-city)
-    for (let j = 0; j < locations.length - 1; j++) {
-      const from = locations[j];
-      const to = locations[j + 1];
-      const distance = distanceBetweenLocations(from, to);
+    // Arcs within the trip (multi-city journeys only)
+    // Destinations (single location) don't have internal arcs
+    if (isJourney(trip)) {
+      for (let j = 0; j < locations.length - 1; j++) {
+        const from = locations[j];
+        const to = locations[j + 1];
+        const distance = distanceBetweenLocations(from, to);
 
-      arcs.push({
-        startLat: from.lat,
-        startLng: from.lng,
-        endLat: to.lat,
-        endLng: to.lng,
-        color: colors,
-        stroke: 1.5,
-        altitude: Math.min(0.3, Math.max(0.05, distance / 15000)),
-        label: `${from.city} → ${to.city}`,
-        tripId: trip.id,
-        dashLength: 0.4,
-        dashGap: 0.1,
-        dashAnimateTime: 1500,
-      });
+        arcs.push({
+          startLat: from.lat,
+          startLng: from.lng,
+          endLat: to.lat,
+          endLng: to.lng,
+          color: colors,
+          stroke: 1.5,
+          altitude: Math.min(0.3, Math.max(0.05, distance / 15000)),
+          label: `${from.city} → ${to.city}`,
+          tripId: trip.id,
+          dashLength: 0.4,
+          dashGap: 0.1,
+          dashAnimateTime: 1500,
+        });
+      }
     }
 
     // Update previous location to last location of this trip
-    if (locations.length > 0) {
-      previousLocation = locations[locations.length - 1];
-    }
+    previousLocation = locations[locations.length - 1];
   }
 
   return arcs;
