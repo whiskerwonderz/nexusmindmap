@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { TravelGlobe, GlobeControls, GlobeStats } from '$lib/components/globe';
   import { TravelMap, MapControls } from '$lib/components/map';
+  import { JourneyTimeline } from '$lib/components/timeline';
   import TripList from './TripList.svelte';
   import AddTripModal from './AddTripModal.svelte';
   import EditTripModal from './EditTripModal.svelte';
@@ -94,7 +95,7 @@
   }
 </script>
 
-<div class="traveler-view">
+<div class="traveler-view" class:timeline-mode={layout === 'timeline'}>
   <div class="main-content">
     <!-- Layout Switcher -->
     <div class="layout-switcher">
@@ -127,7 +128,6 @@
         class="layout-btn"
         class:active={layout === 'timeline'}
         onclick={() => appStore.setTravelerLayout('timeline')}
-        disabled
       >
         <svg class="layout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -152,10 +152,10 @@
           class="visualization"
         />
       {:else}
-        <div class="timeline-placeholder">
-          <span class="placeholder-icon">📅</span>
-          <p>Timeline view coming soon</p>
-        </div>
+        <JourneyTimeline
+          onTripClick={handleTripSelect}
+          class="visualization"
+        />
       {/if}
 
       {#if selectedMarker}
@@ -191,30 +191,35 @@
       {/if}
     </div>
 
-    <!-- Stats Below Visualization -->
-    <div class="stats-section">
-      <GlobeStats />
-    </div>
+    <!-- Stats Below Visualization (hidden in timeline mode) -->
+    {#if layout !== 'timeline'}
+      <div class="stats-section">
+        <GlobeStats />
+      </div>
+    {/if}
   </div>
 
-  <aside class="sidebar">
-    {#if layout === 'globe'}
-      <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
-    {:else if layout === 'map'}
-      <MapControls
-        onResetView={handleResetView}
-        onFocusHome={handleFocusHome}
-        onStyleChange={handleMapStyleChange}
-      />
-    {/if}
+  <!-- Sidebar (hidden in timeline mode) -->
+  {#if layout !== 'timeline'}
+    <aside class="sidebar">
+      {#if layout === 'globe'}
+        <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
+      {:else if layout === 'map'}
+        <MapControls
+          onResetView={handleResetView}
+          onFocusHome={handleFocusHome}
+          onStyleChange={handleMapStyleChange}
+        />
+      {/if}
 
-    <TripList
-      onTripSelect={handleTripSelect}
-      onAddTrip={openAddTripModal}
-      onEditTrip={openEditTripModal}
-      class="trip-list-container"
-    />
-  </aside>
+      <TripList
+        onTripSelect={handleTripSelect}
+        onAddTrip={openAddTripModal}
+        onEditTrip={openEditTripModal}
+        class="trip-list-container"
+      />
+    </aside>
+  {/if}
 </div>
 
 <AddTripModal isOpen={isAddTripModalOpen} onClose={closeAddTripModal} />
@@ -229,6 +234,26 @@
     gap: 1.5rem;
     padding: 1rem;
     box-sizing: border-box;
+  }
+
+  .traveler-view.timeline-mode {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+
+  .traveler-view.timeline-mode .main-content {
+    gap: 0;
+  }
+
+  .traveler-view.timeline-mode .layout-switcher {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 60;
+  }
+
+  .traveler-view.timeline-mode .viz-area {
+    border-radius: 0;
   }
 
   .main-content {
@@ -295,29 +320,6 @@
   }
 
   :global(.visualization) { width: 100%; height: 100%; }
-
-  .timeline-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
-    color: rgba(255, 255, 255, 0.5);
-    border-radius: 12px;
-  }
-
-  .placeholder-icon {
-    font-size: 3rem;
-    opacity: 0.5;
-  }
-
-  .timeline-placeholder p {
-    margin: 0;
-    font-size: 1rem;
-  }
 
   .stats-section {
     flex-shrink: 0;

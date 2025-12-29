@@ -25,6 +25,7 @@
   let isReady = $state(false);
   let isLoading = $state(true);
   let currentMapStyle = $state<'dark' | 'light' | 'terrain'>('dark');
+  let currentPopup: maplibregl.Popup | null = null;
 
   // ============================================
   // REACTIVE DATA
@@ -106,6 +107,37 @@
       addMarkerLayer();
       addHomeBaseMarker();
       fitToTrips();
+    });
+  }
+
+  // ============================================
+  // POPUP MANAGEMENT
+  // ============================================
+
+  function closeCurrentPopup(): void {
+    if (currentPopup) {
+      currentPopup.remove();
+      currentPopup = null;
+    }
+  }
+
+  function showPopup(lngLat: [number, number], html: string, className: string = 'travel-popup'): void {
+    closeCurrentPopup();
+
+    if (!map) return;
+
+    currentPopup = new maplibregl.Popup({
+      closeButton: true,
+      closeOnClick: true,
+      className,
+    })
+      .setLngLat(lngLat)
+      .setHTML(html)
+      .addTo(map);
+
+    // Clear reference when popup is closed
+    currentPopup.on('close', () => {
+      currentPopup = null;
     });
   }
 
@@ -224,23 +256,16 @@
       });
 
       map.on('click', 'routes-line', (e) => {
-        if (e.features && e.features[0] && map) {
+        if (e.features && e.features[0]) {
           const props = e.features[0].properties;
-          const coordinates = e.lngLat;
+          const coordinates: [number, number] = [e.lngLat.lng, e.lngLat.lat];
 
-          new maplibregl.Popup({
-            closeButton: true,
-            closeOnClick: true,
-            className: 'travel-popup',
-          })
-            .setLngLat(coordinates)
-            .setHTML(`
-              <div class="popup-content">
-                <h3>${props?.label || 'Trip'}</h3>
-                <p class="route-hint">Click markers for details</p>
-              </div>
-            `)
-            .addTo(map);
+          showPopup(coordinates, `
+            <div class="popup-content">
+              <h3>${props?.label || 'Trip'}</h3>
+              <p class="route-hint">Click markers for details</p>
+            </div>
+          `);
         }
       });
     }
@@ -309,24 +334,17 @@
 
     // Home marker click
     map.on('click', 'home-marker-icon', (e) => {
-      if (e.features && e.features[0] && map) {
+      if (e.features && e.features[0]) {
         const props = e.features[0].properties;
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number];
 
-        new maplibregl.Popup({
-          closeButton: true,
-          closeOnClick: true,
-          className: 'travel-popup home-popup',
-        })
-          .setLngLat(coords)
-          .setHTML(`
-            <div class="popup-content">
-              <div class="home-badge">HOME BASE</div>
-              <h3>${props?.city}</h3>
-              <p>${props?.country}</p>
-            </div>
-          `)
-          .addTo(map);
+        showPopup(coords, `
+          <div class="popup-content">
+            <div class="home-badge">HOME BASE</div>
+            <h3>${props?.city}</h3>
+            <p>${props?.country}</p>
+          </div>
+        `, 'travel-popup home-popup');
       }
     });
 
@@ -417,21 +435,14 @@
             onMarkerClick(marker);
           }
 
-          // Show popup
-          new maplibregl.Popup({
-            closeButton: true,
-            closeOnClick: true,
-            className: 'travel-popup',
-          })
-            .setLngLat(coords)
-            .setHTML(`
-              <div class="popup-content">
-                <h3>${props?.city}</h3>
-                <p>${props?.country}</p>
-                <span class="visits">${props?.visits} visit${props?.visits > 1 ? 's' : ''}</span>
-              </div>
-            `)
-            .addTo(map!);
+          // Show popup (closes any existing popup first)
+          showPopup(coords, `
+            <div class="popup-content">
+              <h3>${props?.city}</h3>
+              <p>${props?.country}</p>
+              <span class="visits">${props?.visits} visit${props?.visits > 1 ? 's' : ''}</span>
+            </div>
+          `);
         }
       });
 
