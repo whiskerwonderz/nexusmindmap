@@ -26,6 +26,7 @@
 /* Base styles */
 html, body {
   height: 100%;
+  min-height: 100vh;
   margin: 0;
   padding: 0;
 }
@@ -35,6 +36,13 @@ body {
   background-color: var(--color-background);
   color: var(--color-text);
   overflow: hidden;
+}
+
+/* Ensure SvelteKit app container fills height */
+body > div[style*="display: contents"],
+#svelte {
+  height: 100%;
+  min-height: 100vh;
 }
 
 /* Smooth transitions for theme changes */

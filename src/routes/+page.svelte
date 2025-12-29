@@ -117,8 +117,10 @@
 
   {#if mode === 'traveler'}
     <!-- Traveler Mode: Full-width globe view -->
-    <div class="flex-1 min-h-0">
-      <TravelerView />
+    <div class="flex-1 relative">
+      <div class="absolute inset-0 overflow-hidden">
+        <TravelerView />
+      </div>
     </div>
   {:else}
     <!-- Builder Mode: Three-panel layout -->

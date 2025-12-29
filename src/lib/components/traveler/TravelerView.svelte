@@ -116,12 +116,13 @@
 
 <style>
   .traveler-view {
+    position: absolute;
+    inset: 0;
     display: grid;
     grid-template-columns: 1fr 320px;
     gap: 1.5rem;
-    height: 100%;
-    min-height: 0;
     padding: 1rem;
+    box-sizing: border-box;
   }
 
   .main-content {
@@ -129,11 +130,12 @@
     flex-direction: column;
     gap: 1rem;
     min-height: 0;
+    overflow: hidden;
   }
 
   .globe-area {
     position: relative;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 400px;
     border-radius: 16px;
     overflow: hidden;
@@ -143,6 +145,14 @@
 
   .stats-section {
     flex-shrink: 0;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow-y: auto;
+    min-height: 0;
   }
 
   .location-info,
@@ -242,13 +252,6 @@
   .close-btn:hover {
     background: rgba(255, 255, 255, 0.2);
     color: white;
-  }
-
-  .sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    overflow-y: auto;
   }
 
   :global(.trip-list-container) {
