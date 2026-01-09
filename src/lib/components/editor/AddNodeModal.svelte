@@ -1,8 +1,9 @@
 <script lang="ts">
   import { nodes, addNode, addEdge } from '$lib/stores/graph';
+  import { appStore } from '$lib/stores/appStore.svelte';
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
-  import { NODE_TYPES, NODE_TYPE_LABELS, type NodeType } from '$lib/types';
+  import { NODE_TYPES, type NodeType } from '$lib/types';
 
   interface Props {
     isOpen: boolean;
@@ -19,6 +20,10 @@
   let url = $state('');
   let connectTo = $state<string[]>([]);
 
+  // Editing type name state
+  let editingType = $state<NodeType | null>(null);
+  let editTypeName = $state('');
+
   // Reset form when modal opens
   $effect(() => {
     if (isOpen) {
@@ -28,8 +33,27 @@
       date = '';
       url = '';
       connectTo = [];
+      editingType = null;
+      editTypeName = '';
     }
   });
+
+  function startEditingTypeName(type: NodeType, e: MouseEvent) {
+    e.stopPropagation();
+    editTypeName = appStore.getNodeTypeLabel(type);
+    editingType = type;
+  }
+
+  function saveTypeName() {
+    if (editingType && editTypeName.trim()) {
+      appStore.setNodeTypeLabel(editingType, editTypeName.trim());
+    }
+    editingType = null;
+  }
+
+  function cancelEditTypeName() {
+    editingType = null;
+  }
 
   function handleSubmit(e: Event) {
     e.preventDefault();
@@ -116,17 +140,50 @@
             {#each NODE_TYPES as type}
               {@const color = getNodeColor(themeState.currentTheme, type)}
               {@const isSelected = selectedType === type}
-              <button
-                type="button"
-                class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all {isSelected ? 'ring-2 ring-white/30' : 'hover:bg-white/5'}"
-                style:background={isSelected ? `${color}30` : `${color}10`}
-                style:color={color}
-                style:border="1px solid {isSelected ? color : `${color}30`}"
-                onclick={() => selectedType = type}
-              >
-                <span class="w-2 h-2 rounded-full" style:background={color}></span>
-                {NODE_TYPE_LABELS[type]}
-              </button>
+              {@const isEditing = editingType === type}
+              {#if isEditing}
+                <div
+                  class="flex items-center gap-1 px-2 py-1 rounded-lg"
+                  style:background="{color}20"
+                  style:border="1px solid {color}"
+                >
+                  <span class="w-2 h-2 rounded-full shrink-0" style:background={color}></span>
+                  <input
+                    type="text"
+                    bind:value={editTypeName}
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); saveTypeName(); }
+                      if (e.key === 'Escape') cancelEditTypeName();
+                    }}
+                    onblur={saveTypeName}
+                    class="flex-1 min-w-0 px-1 py-0.5 rounded bg-black/30 text-xs focus:outline-none"
+                    style:color={color}
+                    autofocus
+                  />
+                </div>
+              {:else}
+                <button
+                  type="button"
+                  class="group flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all {isSelected ? 'ring-2 ring-white/30' : 'hover:bg-white/5'}"
+                  style:background={isSelected ? `${color}30` : `${color}10`}
+                  style:color={color}
+                  style:border="1px solid {isSelected ? color : `${color}30`}"
+                  onclick={() => selectedType = type}
+                >
+                  <span class="w-2 h-2 rounded-full shrink-0" style:background={color}></span>
+                  <span class="flex-1 text-left truncate">{appStore.getNodeTypeLabel(type)}</span>
+                  <span
+                    class="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
+                    onclick={(e) => startEditingTypeName(type, e)}
+                    title="Rename this type"
+                  >
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </span>
+                </button>
+              {/if}
             {/each}
           </div>
         </div>
@@ -214,7 +271,7 @@
                   </span>
                   <span class="w-2 h-2 rounded-full shrink-0" style:background={color}></span>
                   <span class="truncate">{node.label}</span>
-                  <span class="ml-auto text-xs text-graph-muted">{NODE_TYPE_LABELS[node.type]}</span>
+                  <span class="ml-auto text-xs text-graph-muted">{appStore.getNodeTypeLabel(node.type)}</span>
                 </button>
               {/each}
             </div>

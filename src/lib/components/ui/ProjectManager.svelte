@@ -78,6 +78,12 @@
     }
   }
 
+  function handleLoadDemo(): void {
+    projectStore.loadDemoProject(mode);
+    toastStore.success(`Loaded demo project`);
+    onClose();
+  }
+
   function startRename(project: ProjectMeta): void {
     renamingId = project.id;
     renameValue = project.name;
@@ -158,7 +164,7 @@
           </svg>
           <div class="storage-text">
             <span>Saved in browser localStorage</span>
-            <span class="storage-detail">Data stays on this device only. Export to backup.</span>
+            <span class="storage-detail">Data stays on this browser only. Export to backup.</span>
           </div>
         </div>
 
@@ -239,6 +245,16 @@
           {:else}
             <div class="empty-state">No projects yet</div>
           {/each}
+        </div>
+
+        <!-- View Demo -->
+        <div class="demo-section">
+          <button class="demo-btn" onclick={handleLoadDemo}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            View Demo
+          </button>
         </div>
       </div>
     </div>
@@ -591,5 +607,37 @@
   .storage-detail {
     font-size: 11px;
     color: rgba(147, 197, 253, 0.7);
+  }
+
+  .demo-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .demo-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    color: rgba(165, 180, 252, 0.9);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .demo-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    color: rgba(199, 210, 254, 1);
+    border-color: rgba(99, 102, 241, 0.5);
+  }
+
+  .demo-btn svg {
+    width: 16px;
+    height: 16px;
   }
 </style>

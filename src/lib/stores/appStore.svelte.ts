@@ -9,12 +9,14 @@ import type {
   TravelerNodeType,
   BuilderLayout,
   TravelerLayout,
+  NodeType,
 } from '$lib/types/index';
 import {
   DEFAULT_BUILDER_SETTINGS,
   DEFAULT_TRAVELER_SETTINGS,
   nowISO,
 } from '$lib/types/index';
+import { NODE_TYPE_LABELS } from '$lib/types';
 import type { BuilderNode } from '$lib/types/builder';
 import type { TripNode } from '$lib/types/traveler';
 
@@ -208,6 +210,23 @@ function updateBuilderSettings(updates: Partial<typeof state.builderSettings>): 
   saveToStorage(state);
 }
 
+function setNodeTypeLabel(nodeType: NodeType, label: string): void {
+  const customLabels = state.builderSettings.customNodeTypeLabels ?? {};
+  state.builderSettings = {
+    ...state.builderSettings,
+    customNodeTypeLabels: {
+      ...customLabels,
+      [nodeType]: label.trim() || undefined, // Remove if empty
+    },
+  };
+  saveToStorage(state);
+}
+
+function getNodeTypeLabel(nodeType: NodeType): string {
+  const customLabel = state.builderSettings.customNodeTypeLabels?.[nodeType as keyof typeof state.builderSettings.customNodeTypeLabels];
+  return customLabel || NODE_TYPE_LABELS[nodeType] || nodeType;
+}
+
 // Traveler-specific actions
 function setTravelerLayout(layout: TravelerLayout): void {
   state.travelerSettings.layout = layout;
@@ -298,6 +317,8 @@ export const appStore = {
   // Builder actions
   setBuilderLayout,
   updateBuilderSettings,
+  setNodeTypeLabel,
+  getNodeTypeLabel,
 
   // Traveler actions
   setTravelerLayout,

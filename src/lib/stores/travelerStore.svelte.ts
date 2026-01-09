@@ -18,6 +18,8 @@ import {
   getUniqueYears,
 } from '$lib/utils/tripUtils';
 import { appStore } from './appStore.svelte';
+import { themeState } from './theme.svelte';
+import { getExplorerColors } from '$lib/themes';
 
 // ============================================
 // DERIVED STATE (from appStore)
@@ -68,14 +70,17 @@ const stats = $derived<TravelStats>(
   calculateTravelStats(filteredTrips)
 );
 
+/** Explorer colors derived from current theme */
+const explorerColors = $derived(getExplorerColors(themeState.currentTheme));
+
 /** Globe arcs */
 const arcs = $derived<GlobeArc[]>(
-  tripsToArcs(filteredTrips, settings.colorScheme, settings.homeBase)
+  tripsToArcs(filteredTrips, explorerColors.arcColors, settings.homeBase)
 );
 
 /** Globe markers */
 const markers = $derived<GlobeMarker[]>(
-  tripsToMarkers(filteredTrips, settings.homeBase)
+  tripsToMarkers(filteredTrips, explorerColors.markerColor, explorerColors.homeColor, settings.homeBase)
 );
 
 // ============================================
@@ -188,6 +193,9 @@ export const travelerStore = {
   get globeStyle() { return globeStyle; },
   get colorScheme() { return colorScheme; },
   get displayMode() { return displayMode; },
+
+  // Theme-derived explorer colors
+  get explorerColors() { return explorerColors; },
 
   // Entry type counts (for UI badges)
   get journeyCount() { return journeyCount; },

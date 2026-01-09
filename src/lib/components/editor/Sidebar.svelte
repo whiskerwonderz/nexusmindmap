@@ -1,9 +1,11 @@
 <script lang="ts">
   import { nodes, edges, nodesByType, selectNode, selectedNodeId, loadData, clear } from '$lib/stores/graph';
+  import { appStore } from '$lib/stores/appStore.svelte';
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
-  import { NODE_TYPE_LABELS, NODE_TYPES, type NodeType } from '$lib/types';
-  import { exportNodesToCSV, importNodesFromCSV } from '$lib/utils/dataExport';
+  import { NODE_TYPES, type NodeType } from '$lib/types';
+  import { exportNodesToCSV, importNodesFromCSV, exportShareableGraph } from '$lib/utils/dataExport';
+  import { projectStore } from '$lib/stores/projectStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
 
   interface Props {
@@ -24,11 +26,7 @@
 
   // File input refs
   let fileInputRef = $state<HTMLInputElement | null>(null);
-  let aiFileInputRef = $state<HTMLInputElement | null>(null);
   let isImporting = $state(false);
-
-  // n8n webhook URL for AI import
-  const AI_IMPORT_WEBHOOK = 'https://n8n.nullis.pl/webhook/ai-import-nodes';
 
   // Export functions
   function handleExportCSV(): void {
@@ -36,13 +34,17 @@
     toastStore.success('Nodes exported to CSV');
   }
 
+  function handleExportGraph(): void {
+    const projectName = projectStore.currentBuilderProject?.name || 'My Knowledge Graph';
+    const customLabels = appStore.builderSettings.customNodeTypeLabels || {};
+    const currentLayout = appStore.builderSettings.layout || 'physics';
+    exportShareableGraph($nodes, $edges, projectName, customLabels, currentLayout);
+    toastStore.success('Graph exported as HTML');
+  }
+
   // Import trigger
   function triggerImport(): void {
     fileInputRef?.click();
-  }
-
-  function triggerAIImport(): void {
-    aiFileInputRef?.click();
   }
 
   // Handle CSV file import
@@ -68,54 +70,6 @@
     } catch (error) {
       console.error('Import failed:', error);
       toastStore.error(error instanceof Error ? error.message : 'Failed to import file');
-    } finally {
-      isImporting = false;
-      target.value = '';
-    }
-  }
-
-  // Handle AI-powered import (sends to n8n webhook)
-  async function handleAIFileImport(e: Event): Promise<void> {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    isImporting = true;
-
-    try {
-      const content = await file.text();
-
-      // Send to n8n webhook for AI processing
-      const response = await fetch(AI_IMPORT_WEBHOOK, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: file.name,
-          content,
-          type: 'builder-nodes',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`AI import failed: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
-      if (result.nodes && Array.isArray(result.nodes)) {
-        loadData({
-          version: '1.0',
-          meta: { title: 'AI Imported Graph' },
-          nodes: result.nodes,
-          edges: result.edges || [],
-        });
-        toastStore.success(`AI imported ${result.nodes.length} nodes`);
-      } else {
-        throw new Error('Invalid response from AI import');
-      }
-    } catch (error) {
-      console.error('AI Import failed:', error);
-      toastStore.error(error instanceof Error ? error.message : 'AI import failed');
     } finally {
       isImporting = false;
       target.value = '';
@@ -245,7 +199,7 @@
               <polyline points="9 6 15 12 9 18" />
             </svg>
             <span class="w-2.5 h-2.5 rounded-full" style:background={color}></span>
-            <span class="text-sm font-medium">{NODE_TYPE_LABELS[type]}</span>
+            <span class="text-sm font-medium">{appStore.getNodeTypeLabel(type)}</span>
             <span class="ml-auto text-xs text-graph-muted bg-white/5 px-1.5 py-0.5 rounded">{nodesOfType.length}</span>
           </button>
 
@@ -282,7 +236,7 @@
 
   <!-- Import/Export Section -->
   <div class="p-4 border-t border-panel">
-    <h3 class="text-xs text-graph-muted uppercase tracking-wide mb-3">Data</h3>
+    <h3 class="text-xs text-graph-muted uppercase tracking-wide mb-3">Export</h3>
 
     <!-- Hidden file inputs -->
     <input
@@ -292,77 +246,79 @@
       onchange={handleFileImport}
       class="hidden"
     />
-    <input
-      type="file"
-      accept=".csv,.txt,.json"
-      bind:this={aiFileInputRef}
-      onchange={handleAIFileImport}
-      class="hidden"
-    />
 
-    <div class="space-y-2">
-      <!-- Export CSV -->
-      <button
-        type="button"
-        class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
-        onclick={handleExportCSV}
-      >
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-        Export CSV
-      </button>
+    <div class="space-y-3">
+      <!-- DATA section -->
+      <div class="export-category">
+        <span class="category-label">DATA</span>
+        <div class="space-y-2">
+          <button
+            type="button"
+            class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
+            onclick={handleExportCSV}
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            Export CSV
+          </button>
 
-      <!-- Import CSV with Help Tooltip -->
-      <div class="flex gap-2">
-        <button
-          type="button"
-          class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
-          class:opacity-50={isImporting}
-          disabled={isImporting}
-          onclick={triggerImport}
-        >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
-          {isImporting ? 'Importing...' : 'Import CSV'}
-        </button>
+          <!-- Import CSV with Help Tooltip -->
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
+              class:opacity-50={isImporting}
+              disabled={isImporting}
+              onclick={triggerImport}
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              {isImporting ? 'Importing...' : 'Import CSV'}
+            </button>
 
-        <!-- Help Tooltip -->
-        <div class="help-tooltip">
-          <button type="button" class="help-btn" title="CSV format help">?</button>
-          <div class="tooltip-content">
-            <strong>Expected CSV Format:</strong>
-            <pre>Label,Type,Description,Date,URL,Connections</pre>
-            <p><strong>Label:</strong> Node name (required)</p>
-            <p><strong>Type:</strong> goal, skill, project, source, cert, concept</p>
-            <p><strong>Description:</strong> Optional description</p>
-            <p><strong>Date:</strong> Optional date (e.g., 2024-01)</p>
-            <p><strong>URL:</strong> Optional link</p>
-            <p><strong>Connections:</strong> Semicolon-separated node labels</p>
+            <!-- Help Tooltip -->
+            <div class="help-tooltip">
+              <button type="button" class="help-btn" title="CSV format help">?</button>
+              <div class="tooltip-content">
+                <strong>Expected CSV Format:</strong>
+                <pre>Label,Type,Description,Date,URL,Connections</pre>
+                <p><strong>Label:</strong> Node name (required)</p>
+                <p><strong>Type:</strong> goal, skill, project, source, cert, concept</p>
+                <p><strong>Description:</strong> Optional description</p>
+                <p><strong>Date:</strong> Optional date (e.g., 2024-01)</p>
+                <p><strong>URL:</strong> Optional link</p>
+                <p><strong>Connections:</strong> Semicolon-separated node labels</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- AI Import -->
-      <button
-        type="button"
-        class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-sm transition-colors"
-        class:opacity-50={isImporting}
-        disabled={isImporting}
-        onclick={triggerAIImport}
-      >
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z" />
-          <circle cx="8" cy="14" r="1" />
-          <circle cx="16" cy="14" r="1" />
-        </svg>
-        AI Import (any format)
-      </button>
+      <!-- VISUAL section -->
+      <div class="export-category">
+        <span class="category-label">VISUAL</span>
+        <button
+          type="button"
+          class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg export-graph-btn text-sm transition-colors"
+          onclick={handleExportGraph}
+        >
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="5" r="3"/>
+            <circle cx="5" cy="19" r="3"/>
+            <circle cx="19" cy="19" r="3"/>
+            <line x1="12" y1="8" x2="5" y2="16"/>
+            <line x1="12" y1="8" x2="19" y2="16"/>
+          </svg>
+          Export Graph
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -434,5 +390,34 @@
   .tooltip-content p strong {
     display: inline;
     margin: 0;
+  }
+
+  .export-category {
+    margin-bottom: 0.5rem;
+  }
+
+  .export-category:last-child {
+    margin-bottom: 0;
+  }
+
+  .category-label {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.35);
+    margin-bottom: 0.5rem;
+  }
+
+  .export-graph-btn {
+    background: rgba(147, 51, 234, 0.1);
+    border: 1px solid rgba(147, 51, 234, 0.25);
+    color: rgb(196, 167, 231);
+  }
+
+  .export-graph-btn:hover {
+    background: rgba(147, 51, 234, 0.2);
+    color: rgb(216, 180, 254);
   }
 </style>

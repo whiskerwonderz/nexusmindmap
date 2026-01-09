@@ -8,8 +8,10 @@
     deleteNode,
     deleteEdge,
     edges,
-    nodeMap
+    nodeMap,
+    nodes
   } from '$lib/stores/graph';
+  import { appStore } from '$lib/stores/appStore.svelte';
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
   import { NODE_TYPE_LABELS } from '$lib/types';
@@ -21,12 +23,15 @@
   let { onAddConnection }: Props = $props();
 
   let showDeleteConfirm = $state(false);
+  let isEditingTypeName = $state(false);
+  let editTypeName = $state('');
 
   // Editable form state
   let editLabel = $state('');
   let editDescription = $state('');
   let editDate = $state('');
   let editUrl = $state('');
+  let editParent = $state<string | null>(null);
 
   // Track which node we're editing to reset form when selection changes
   let editingNodeId = $state<string | null>(null);
@@ -42,12 +47,19 @@
       editDescription = $selectedNode.description ?? '';
       editDate = $selectedNode.date ?? '';
       editUrl = $selectedNode.url ?? '';
+      editParent = $selectedNode.parent ?? null;
       editingNodeId = $selectedNode.id;
       showDeleteConfirm = false;
     } else if (!$selectedNode) {
       editingNodeId = null;
       showDeleteConfirm = false;
     }
+  });
+
+  // Get available parent nodes (all nodes except current and its descendants)
+  const availableParents = $derived.by(() => {
+    if (!$selectedNode) return [];
+    return $nodes.filter(n => n.id !== $selectedNode.id);
   });
 
   function handleLabelChange() {
@@ -74,6 +86,12 @@
     }
   }
 
+  function handleParentChange() {
+    if ($selectedNode) {
+      updateNode($selectedNode.id, { parent: editParent || undefined });
+    }
+  }
+
   function handleDeleteNode() {
     if ($selectedNode) {
       deleteNode($selectedNode.id);
@@ -93,6 +111,24 @@
   function getEdgeDirection(edge: { from: string; to: string }, currentNodeId: string): 'from' | 'to' {
     return edge.from === currentNodeId ? 'to' : 'from';
   }
+
+  function startEditingTypeName() {
+    if ($selectedNode) {
+      editTypeName = appStore.getNodeTypeLabel($selectedNode.type);
+      isEditingTypeName = true;
+    }
+  }
+
+  function saveTypeName() {
+    if ($selectedNode && editTypeName.trim()) {
+      appStore.setNodeTypeLabel($selectedNode.type, editTypeName.trim());
+    }
+    isEditingTypeName = false;
+  }
+
+  function cancelEditTypeName() {
+    isEditingTypeName = false;
+  }
 </script>
 
 <div class="h-full flex flex-col">
@@ -105,17 +141,40 @@
     {#if $selectedNode}
       {@const color = getNodeColor(themeState.currentTheme, $selectedNode.type)}
 
-      <!-- Node type badge -->
+      <!-- Node type badge (click to edit) -->
       <div class="flex items-center gap-2 mb-4">
-        <span
-          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
-          style:background="{color}20"
-          style:color={color}
-          style:border="1px solid {color}40"
-        >
-          <span class="w-2 h-2 rounded-full" style:background={color}></span>
-          {NODE_TYPE_LABELS[$selectedNode.type]}
-        </span>
+        {#if isEditingTypeName}
+          <div class="flex items-center gap-2 flex-1">
+            <input
+              type="text"
+              bind:value={editTypeName}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') saveTypeName();
+                if (e.key === 'Escape') cancelEditTypeName();
+              }}
+              onblur={saveTypeName}
+              class="flex-1 px-2 py-1 rounded-lg bg-input border border-panel text-xs focus:outline-none focus:border-white/20"
+              autofocus
+            />
+          </div>
+        {:else}
+          <button
+            type="button"
+            onclick={startEditingTypeName}
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
+            style:background="{color}20"
+            style:color={color}
+            style:border="1px solid {color}40"
+            title="Click to rename this node type"
+          >
+            <span class="w-2 h-2 rounded-full" style:background={color}></span>
+            {appStore.getNodeTypeLabel($selectedNode.type)}
+            <svg class="w-3 h-3 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+        {/if}
       </div>
 
       <!-- Label field -->
@@ -192,6 +251,42 @@
             </svg>
             Open link
           </a>
+        {/if}
+      </div>
+
+      <!-- Parent field (for hierarchy) -->
+      <div class="mb-4">
+        <label for="inspector-parent" class="text-xs text-graph-muted uppercase tracking-wide mb-1.5 block">
+          Parent (Hierarchy)
+        </label>
+        <select
+          id="inspector-parent"
+          bind:value={editParent}
+          onchange={handleParentChange}
+          class="w-full px-3 py-2 rounded-lg bg-input border border-panel text-sm focus:outline-none focus:border-white/20 cursor-pointer"
+        >
+          <option value={null}>No parent (root)</option>
+          {#each availableParents as node}
+            {@const nodeColor = getNodeColor(themeState.currentTheme, node.type)}
+            <option value={node.id}>
+              {node.label} ({appStore.getNodeTypeLabel(node.type)})
+            </option>
+          {/each}
+        </select>
+        {#if editParent}
+          {@const parentNode = $nodeMap.get(editParent)}
+          {#if parentNode}
+            {@const parentColor = getNodeColor(themeState.currentTheme, parentNode.type)}
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 text-xs mt-1.5 hover:opacity-80"
+              style:color={parentColor}
+              onclick={() => selectNode(parentNode.id)}
+            >
+              <span class="w-1.5 h-1.5 rounded-full" style:background={parentColor}></span>
+              Go to {parentNode.label}
+            </button>
+          {/if}
         {/if}
       </div>
 

@@ -1,20 +1,26 @@
 <script lang="ts">
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
-  import { formatDistance, calculateEarthCircumferences } from '$lib/utils/geo';
 
-  interface Props { class?: string; }
-  let { class: className = '' }: Props = $props();
+  interface Props {
+    class?: string;
+    onShowTrips?: () => void;
+  }
+  let { class: className = '', onShowTrips }: Props = $props();
 
   const stats = $derived(travelerStore.stats);
-  const earthsCircled = $derived(calculateEarthCircumferences(stats.totalDistanceKm).toFixed(1));
 </script>
 
 <div class="globe-stats {className}">
   <div class="stats-row primary">
-    <div class="stat-item">
+    <button
+      type="button"
+      class="stat-item clickable"
+      onclick={() => onShowTrips?.()}
+      title="View all trips"
+    >
       <span class="stat-value">{stats.totalTrips}</span>
       <span class="stat-label">Trips</span>
-    </div>
+    </button>
     <div class="stat-divider"></div>
     <div class="stat-item">
       <span class="stat-value">{stats.uniqueCountries}</span>
@@ -24,22 +30,6 @@
     <div class="stat-item">
       <span class="stat-value">{stats.uniqueCities}</span>
       <span class="stat-label">Cities</span>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <span class="stat-value">{stats.totalDays}</span>
-      <span class="stat-label">Days</span>
-    </div>
-  </div>
-
-  <div class="distance-highlight">
-    <div class="distance-main">
-      <span class="distance-value">{formatDistance(stats.totalDistanceKm)}</span>
-      <span class="distance-label">traveled</span>
-    </div>
-    <div class="earth-count">
-      <span class="earth-icon">&#127757;</span>
-      <span>x {earthsCircled} around Earth</span>
     </div>
   </div>
 
@@ -86,6 +76,28 @@
     align-items: center;
     gap: 0.25rem;
     padding: 0 0.75rem;
+    background: transparent;
+    border: none;
+  }
+
+  .stat-item.clickable {
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    margin: -0.5rem 0;
+    transition: all 0.15s ease;
+  }
+
+  .stat-item.clickable:hover {
+    background: rgba(0, 212, 255, 0.1);
+  }
+
+  .stat-item.clickable:hover .stat-value {
+    color: #00d4ff;
+  }
+
+  .stat-item.clickable:hover .stat-label {
+    color: rgba(0, 212, 255, 0.8);
   }
 
   .stat-value {
@@ -105,42 +117,6 @@
     width: 1px;
     height: 2rem;
     background: rgba(255, 255, 255, 0.1);
-  }
-
-  .distance-highlight {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1.25rem;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(168, 85, 247, 0.1));
-    border-radius: 12px;
-    border: 1px solid rgba(0, 212, 255, 0.2);
-  }
-
-  .distance-main { display: flex; align-items: baseline; gap: 0.5rem; }
-
-  .distance-value {
-    font-size: 2rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #00d4ff, #a855f7);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .distance-label { font-size: 1rem; color: rgba(255, 255, 255, 0.6); }
-
-  .earth-count {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .earth-icon {
-    font-size: 1.25rem;
   }
 
   .stats-row.secondary {

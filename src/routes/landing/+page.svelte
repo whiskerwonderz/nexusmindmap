@@ -280,7 +280,7 @@
 
   h1 {
     font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: clamp(26px, 4.5vw, 40px);
+    font-size: clamp(22px, 4vw, 34px);
     font-weight: 300;
     line-height: 1.5;
     letter-spacing: 0.01em;

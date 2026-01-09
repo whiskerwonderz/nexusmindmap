@@ -5,13 +5,11 @@
   let isOpen = $state(false);
 
   function handleSelect(themeId: ThemeId) {
-    console.log('handleSelect called with:', themeId);
     setTheme(themeId);
     isOpen = false;
   }
 
   function toggleDropdown() {
-    console.log('Toggle dropdown, current state:', isOpen);
     isOpen = !isOpen;
   }
 

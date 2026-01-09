@@ -87,8 +87,7 @@ export type BuilderLayout =
 /** Traveler mode layouts */
 export type TravelerLayout =
   | 'globe'
-  | 'map'
-  | 'timeline';
+  | 'map';
 
 // ============================================
 // THEME

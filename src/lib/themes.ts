@@ -236,4 +236,26 @@ export function getNodeColor(theme: Theme, nodeType: NodeType): string {
   }
 }
 
+/**
+ * Get explorer/traveler mode colors based on the current theme
+ */
+export function getExplorerColors(theme: Theme): {
+  arcColors: [string, string];
+  markerColor: string;
+  homeColor: string;
+  atmosphereColor: string;
+} {
+  const { colors } = theme;
+  return {
+    // Arc gradient uses skill and project colors
+    arcColors: [colors.skill, colors.project],
+    // Regular markers use cert color (usually warm/amber)
+    markerColor: colors.cert,
+    // Home marker uses goal color
+    homeColor: colors.goal,
+    // Atmosphere uses button primary
+    atmosphereColor: colors.buttonPrimary,
+  };
+}
+
 export default themes;

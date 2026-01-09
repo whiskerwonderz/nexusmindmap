@@ -15,10 +15,8 @@ class ThemeState {
   }
 
   setTheme(id: ThemeId): void {
-    console.log('ThemeState.setTheme called with:', id);
     this.currentThemeId = id;
     if (browser) {
-      console.log('Applying theme:', id);
       applyTheme(getTheme(id));
       localStorage.setItem('skillgraph-theme', id);
     }
@@ -28,7 +26,6 @@ class ThemeState {
     if (!browser) return;
 
     const saved = localStorage.getItem('skillgraph-theme') as ThemeId | null;
-    console.log('initTheme, saved theme:', saved);
     if (saved && themes[saved]) {
       this.currentThemeId = saved;
     }
@@ -40,8 +37,5 @@ class ThemeState {
 export const themeState = new ThemeState();
 
 // Export actions
-export const setTheme = (id: ThemeId) => {
-  console.log('setTheme function called with:', id);
-  themeState.setTheme(id);
-};
+export const setTheme = (id: ThemeId) => themeState.setTheme(id);
 export const initTheme = () => themeState.initTheme();

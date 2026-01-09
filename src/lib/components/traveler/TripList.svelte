@@ -1,6 +1,7 @@
 <script lang="ts">
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
+  import { importFromJSON, importFromCSV, validateImportedTrips } from '$lib/utils/dataExport';
   import type { TripNode } from '$lib/types/traveler';
 
   interface Props {
@@ -21,6 +22,8 @@
   let sortBy = $state<'date' | 'duration' | 'name'>('date');
   let tripToDelete = $state<TripNode | null>(null);
   let showDeleteConfirm = $state(false);
+  let fileInput: HTMLInputElement;
+  let isImporting = $state(false);
 
   const trips = $derived(travelerStore.trips);
 
@@ -98,6 +101,47 @@
     if (cities.length <= 2) return cities.join(' → ');
     return `${cities[0]} → ... → ${cities[cities.length - 1]}`;
   }
+
+  function triggerImport(): void {
+    fileInput?.click();
+  }
+
+  async function handleFileImport(e: Event): Promise<void> {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    isImporting = true;
+    try {
+      const isCSV = file.name.toLowerCase().endsWith('.csv');
+
+      if (isCSV) {
+        const trips = await importFromCSV(file);
+        if (trips.length > 0) {
+          trips.forEach(trip => travelerStore.addTrip(trip));
+          toastStore.success(`Imported ${trips.length} trip${trips.length > 1 ? 's' : ''} from CSV`);
+        } else {
+          toastStore.warning('No valid trips found in the CSV file');
+        }
+      } else {
+        const data = await importFromJSON(file);
+        if (data.type === 'trips' && data.trips) {
+          const validTrips = validateImportedTrips(data.trips);
+          if (validTrips.length > 0) {
+            validTrips.forEach(trip => travelerStore.addTrip(trip));
+            toastStore.success(`Imported ${validTrips.length} trip${validTrips.length > 1 ? 's' : ''}`);
+          } else {
+            toastStore.warning('No valid trips found in the file');
+          }
+        }
+      }
+    } catch (error) {
+      toastStore.error(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      isImporting = false;
+      target.value = '';
+    }
+  }
 </script>
 
 <div class="trip-list {className}">
@@ -114,6 +158,21 @@
         Add Trip
       </button>
     {/if}
+    <button type="button" class="import-btn" onclick={triggerImport} disabled={isImporting}>
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      {isImporting ? 'Importing...' : 'Import CSV'}
+    </button>
+    <input
+      type="file"
+      accept=".csv,.json"
+      class="hidden-input"
+      bind:this={fileInput}
+      onchange={handleFileImport}
+    />
   </header>
 
   <div class="search-bar">
@@ -277,6 +336,36 @@
   .add-trip-btn:hover {
     background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(168, 85, 247, 0.3));
     border-color: rgba(0, 212, 255, 0.5);
+  }
+
+  .import-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .import-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .import-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .hidden-input {
+    display: none;
   }
 
   .search-bar {

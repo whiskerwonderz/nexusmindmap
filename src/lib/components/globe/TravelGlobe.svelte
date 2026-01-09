@@ -36,11 +36,8 @@
 
       // Get initial settings
       const initialStyle = travelerStore.globeStyle;
-      const initialColorScheme = travelerStore.colorScheme;
       const initialTexture = GLOBE_TEXTURES[initialStyle] || GLOBE_TEXTURES.night;
-      const initialAtmosphereColor = initialColorScheme === 'cosmic' ? '#3b82f6' :
-                                      initialColorScheme === 'sunset' ? '#f97316' :
-                                      initialColorScheme === 'ocean' ? '#0ea5e9' : '#64748b';
+      const initialAtmosphereColor = travelerStore.explorerColors.atmosphereColor;
 
       globeInstance = new GlobeGL(container)
         .globeImageUrl(initialTexture)
@@ -169,10 +166,7 @@
   });
 
   $effect(() => {
-    const scheme = travelerStore.colorScheme;
-    const color = scheme === 'cosmic' ? '#3b82f6' :
-                  scheme === 'sunset' ? '#f97316' :
-                  scheme === 'ocean' ? '#0ea5e9' : '#64748b';
+    const color = travelerStore.explorerColors.atmosphereColor;
     if (globeInstance && isReady) {
       globeInstance.atmosphereColor(color);
     }

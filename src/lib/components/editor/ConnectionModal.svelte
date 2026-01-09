@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { nodes, edges, addEdge, getConnectedEdges } from '$lib/stores/graph';
+  import { nodes, edges, addEdge, getConnectedEdges, updateNode } from '$lib/stores/graph';
+  import { appStore } from '$lib/stores/appStore.svelte';
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
-  import { NODE_TYPE_LABELS, EDGE_LABEL_PRESETS } from '$lib/types';
+  import { EDGE_LABEL_PRESETS } from '$lib/types';
 
   interface Props {
     isOpen: boolean;
@@ -17,6 +18,7 @@
   let selectedTarget = $state<string>('');
   let edgeLabel = $state('');
   let showLabelPresets = $state(false);
+  let setAsParent = $state(false);
 
   // Get already connected node IDs for the current source
   const existingConnections = $derived(() => {
@@ -42,6 +44,7 @@
       selectedTarget = '';
       edgeLabel = '';
       showLabelPresets = false;
+      setAsParent = false;
     }
   });
 
@@ -51,6 +54,12 @@
     if (!selectedSource || !selectedTarget) return;
 
     addEdge(selectedSource, selectedTarget, edgeLabel.trim() || undefined);
+
+    // If "set as parent" is checked, update the target node's parent
+    if (setAsParent) {
+      updateNode(selectedTarget, { parent: selectedSource });
+    }
+
     onClose();
   }
 
@@ -120,7 +129,7 @@
               >
                 <span class="w-2 h-2 rounded-full" style:background={color}></span>
                 <span>{sourceNode.label}</span>
-                <span class="ml-auto text-xs text-graph-muted">{NODE_TYPE_LABELS[sourceNode.type]}</span>
+                <span class="ml-auto text-xs text-graph-muted">{appStore.getNodeTypeLabel(sourceNode.type)}</span>
               </div>
             {/if}
           {:else}
@@ -133,7 +142,7 @@
             >
               <option value="">Select a node...</option>
               {#each $nodes as node}
-                <option value={node.id}>{node.label} ({NODE_TYPE_LABELS[node.type]})</option>
+                <option value={node.id}>{node.label} ({appStore.getNodeTypeLabel(node.type)})</option>
               {/each}
             </select>
           {/if}
@@ -173,7 +182,7 @@
                   </span>
                   <span class="w-2 h-2 rounded-full shrink-0" style:background={color}></span>
                   <span class="truncate">{node.label}</span>
-                  <span class="ml-auto text-xs text-graph-muted">{NODE_TYPE_LABELS[node.type]}</span>
+                  <span class="ml-auto text-xs text-graph-muted">{appStore.getNodeTypeLabel(node.type)}</span>
                 </button>
               {/each}
             </div>
@@ -228,6 +237,31 @@
               {/each}
             </div>
           {/if}
+        </div>
+
+        <!-- Hierarchy toggle -->
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
+          <button
+            type="button"
+            class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors {setAsParent ? 'border-blue-400 bg-blue-400/20' : 'border-white/30 hover:border-white/50'}"
+            onclick={() => setAsParent = !setAsParent}
+          >
+            {#if setAsParent}
+              <svg class="w-3 h-3 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            {/if}
+          </button>
+          <div class="flex-1">
+            <div class="text-sm font-medium">Set as parent (hierarchy)</div>
+            <div class="text-xs text-graph-muted">
+              {#if sourceNode && targetNode}
+                "{sourceNode.label}" becomes the parent of "{targetNode.label}"
+              {:else}
+                The source node will be set as the target's parent
+              {/if}
+            </div>
+          </div>
         </div>
 
         <!-- Preview -->

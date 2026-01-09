@@ -103,8 +103,6 @@ export function setTitle(newTitle: string): void {
 }
 
 export function loadData(data: GraphData): void {
-  console.log('loadData called with', data.nodes?.length, 'nodes');
-
   if (data.nodes && Array.isArray(data.nodes)) {
     nodes.set(data.nodes.map((n) => ({ ...n })));
   }
@@ -114,8 +112,6 @@ export function loadData(data: GraphData): void {
   title.set(data.meta?.title ?? 'My SkillGraph');
   selectedNodeId.set(null);
   hoveredNodeId.set(null);
-
-  console.log('After loadData, nodes:', get(nodes).length);
 }
 
 export function clear(): void {

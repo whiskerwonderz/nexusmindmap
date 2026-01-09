@@ -5,9 +5,8 @@ import type {
   GlobeArc,
   GlobeMarker,
   TripCategory,
-  ArcColorScheme,
 } from '$lib/types/traveler';
-import { ARC_COLORS, isJourney, isDestination } from '$lib/types/traveler';
+import { isJourney, isDestination } from '$lib/types/traveler';
 import { calculateTripDistance, distanceBetweenLocations } from './geo';
 import { generateId, nowISO } from '$lib/types/common';
 
@@ -197,12 +196,12 @@ export function calculateTravelStats(trips: TripNode[]): TravelStats {
  */
 export function tripsToArcs(
   trips: TripNode[],
-  colorScheme: ArcColorScheme = 'cosmic',
+  arcColors: [string, string],
   homeBase?: TripLocation
 ): GlobeArc[] {
   const arcs: GlobeArc[] = [];
   const sortedTrips = sortTripsByDate(trips);
-  const colors = ARC_COLORS[colorScheme];
+  const colors = arcColors;
 
   let previousLocation: TripLocation | null = homeBase ?? null;
 
@@ -276,7 +275,12 @@ export function tripsToArcs(
 /**
  * Extract unique markers from all trips
  */
-export function tripsToMarkers(trips: TripNode[], homeBase?: TripLocation): GlobeMarker[] {
+export function tripsToMarkers(
+  trips: TripNode[],
+  markerColor: string,
+  homeColor: string,
+  homeBase?: TripLocation
+): GlobeMarker[] {
   const locationMap = new Map<string, { location: TripLocation; visits: number }>();
 
   for (const trip of trips) {
@@ -303,7 +307,7 @@ export function tripsToMarkers(trips: TripNode[], homeBase?: TripLocation): Glob
       lat: location.lat,
       lng: location.lng,
       size: Math.min(1, 0.3 + visits * 0.15),
-      color: isHome ? '#22c55e' : '#fbbf24',
+      color: isHome ? homeColor : markerColor,
       label: `${location.city}, ${location.country} (${visits} visits)`,
       visits,
       location,

@@ -44,18 +44,10 @@
     terrain: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
   };
 
-  // Route colors based on scheme
-  const routeColor = $derived(
-    settings.colorScheme === 'cosmic' ? '#00d4ff' :
-    settings.colorScheme === 'sunset' ? '#f97316' :
-    settings.colorScheme === 'ocean' ? '#0ea5e9' : '#94a3b8'
-  );
-
-  const routeGlow = $derived(
-    settings.colorScheme === 'cosmic' ? '#a855f7' :
-    settings.colorScheme === 'sunset' ? '#ec4899' :
-    settings.colorScheme === 'ocean' ? '#14b8a6' : '#64748b'
-  );
+  // Route colors from theme
+  const explorerColors = $derived(travelerStore.explorerColors);
+  const routeColor = $derived(explorerColors.arcColors[0]);
+  const routeGlow = $derived(explorerColors.arcColors[1]);
 
   // ============================================
   // LIFECYCLE
@@ -311,7 +303,7 @@
       source: 'home-marker',
       paint: {
         'circle-radius': 20,
-        'circle-color': '#22c55e',
+        'circle-color': explorerColors.homeColor,
         'circle-opacity': 0.15,
         'circle-blur': 1,
       },
@@ -324,7 +316,7 @@
       source: 'home-marker',
       paint: {
         'circle-radius': 8,
-        'circle-color': '#22c55e',
+        'circle-color': explorerColors.homeColor,
         'circle-opacity': 1,
         'circle-stroke-width': 3,
         'circle-stroke-color': '#ffffff',

@@ -1,5 +1,11 @@
 import type { GraphNode, GraphEdge, PhysicsConfig, Simulation } from '$lib/types';
-import { DEFAULT_PHYSICS_CONFIG } from '$lib/types';
+import { DEFAULT_PHYSICS_CONFIG, NODE_SIZES } from '$lib/types';
+
+// Get the visual radius of a node (including outer ring)
+function getNodeRadius(node: GraphNode): number {
+  const baseSize = NODE_SIZES[node.type] ?? 14;
+  return baseSize + 12; // Account for outer glow/ring
+}
 
 export function createSimulation(
   getNodes: () => GraphNode[],
@@ -41,6 +47,11 @@ export function createSimulation(
         const dy = (b.y ?? 0) - (a.y ?? 0);
         const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
 
+        // Calculate minimum distance based on actual node sizes
+        const radiusA = getNodeRadius(a);
+        const radiusB = getNodeRadius(b);
+        const minDist = Math.max(cfg.minDistance, radiusA + radiusB + 20);
+
         // Always apply some repulsion
         const force = cfg.repulsion / (dist * dist);
         const fx = (dx / dist) * force;
@@ -51,11 +62,12 @@ export function createSimulation(
         b.vx = (b.vx ?? 0) + fx;
         b.vy = (b.vy ?? 0) + fy;
 
-        // Extra push if too close
-        if (dist < cfg.minDistance) {
-          const push = (cfg.minDistance - dist) * 0.5;
-          const pushX = (dx / dist) * push;
-          const pushY = (dy / dist) * push;
+        // Strong push if nodes are overlapping
+        if (dist < minDist) {
+          const overlap = minDist - dist;
+          const pushStrength = overlap * 0.8; // Stronger push
+          const pushX = (dx / dist) * pushStrength;
+          const pushY = (dy / dist) * pushStrength;
           a.vx = (a.vx ?? 0) - pushX;
           a.vy = (a.vy ?? 0) - pushY;
           b.vx = (b.vx ?? 0) + pushX;

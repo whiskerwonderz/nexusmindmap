@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { TravelGlobe, GlobeControls, GlobeStats } from '$lib/components/globe';
   import { TravelMap, MapControls } from '$lib/components/map';
-  import { JourneyTimeline } from '$lib/components/timeline';
   import TripList from './TripList.svelte';
   import AddTripModal from './AddTripModal.svelte';
   import EditTripModal from './EditTripModal.svelte';
@@ -18,15 +17,10 @@
   let isAddTripModalOpen = $state(false);
   let isEditTripModalOpen = $state(false);
   let tripToEdit = $state<TripNode | null>(null);
+  let showTripList = $state(true);
 
   // Get current layout from app store
   const layout = $derived(appStore.travelerSettings.layout);
-
-  const layoutOptions: { value: TravelerLayout; label: string }[] = [
-    { value: 'globe', label: 'Globe' },
-    { value: 'map', label: 'Map' },
-    { value: 'timeline', label: 'Timeline' },
-  ];
 
   onMount(() => {
     if (travelerStore.trips.length === 0) {
@@ -93,9 +87,13 @@
   function closeTripDetails(): void {
     selectedTrip = null;
   }
+
+  function toggleTripList(): void {
+    showTripList = !showTripList;
+  }
 </script>
 
-<div class="traveler-view" class:timeline-mode={layout === 'timeline'}>
+<div class="traveler-view">
   <div class="main-content">
     <!-- Layout Switcher -->
     <div class="layout-switcher">
@@ -123,18 +121,6 @@
         </svg>
         <span class="layout-label">Map</span>
       </button>
-      <button
-        type="button"
-        class="layout-btn"
-        class:active={layout === 'timeline'}
-        onclick={() => appStore.setTravelerLayout('timeline')}
-      >
-        <svg class="layout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <path d="M16 2v4M8 2v4M3 10h18"/>
-        </svg>
-        <span class="layout-label">Timeline</span>
-      </button>
     </div>
 
     <!-- Visualization Area -->
@@ -145,15 +131,10 @@
           onMarkerClick={handleMarkerClick}
           class="visualization"
         />
-      {:else if layout === 'map'}
+      {:else}
         <TravelMap
           bind:this={mapComponent}
           onMarkerClick={handleMarkerClick}
-          class="visualization"
-        />
-      {:else}
-        <JourneyTimeline
-          onTripClick={handleTripSelect}
           class="visualization"
         />
       {/if}
@@ -191,35 +172,33 @@
       {/if}
     </div>
 
-    <!-- Stats Below Visualization (hidden in timeline mode) -->
-    {#if layout !== 'timeline'}
-      <div class="stats-section">
-        <GlobeStats />
-      </div>
-    {/if}
+    <!-- Stats Below Visualization -->
+    <div class="stats-section">
+      <GlobeStats onShowTrips={toggleTripList} />
+    </div>
   </div>
 
-  <!-- Sidebar (hidden in timeline mode) -->
-  {#if layout !== 'timeline'}
-    <aside class="sidebar">
-      {#if layout === 'globe'}
-        <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
-      {:else if layout === 'map'}
-        <MapControls
-          onResetView={handleResetView}
-          onFocusHome={handleFocusHome}
-          onStyleChange={handleMapStyleChange}
-        />
-      {/if}
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    {#if layout === 'globe'}
+      <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
+    {:else}
+      <MapControls
+        onResetView={handleResetView}
+        onFocusHome={handleFocusHome}
+        onStyleChange={handleMapStyleChange}
+      />
+    {/if}
 
+{#if showTripList}
       <TripList
         onTripSelect={handleTripSelect}
         onAddTrip={openAddTripModal}
         onEditTrip={openEditTripModal}
         class="trip-list-container"
       />
-    </aside>
-  {/if}
+    {/if}
+  </aside>
 </div>
 
 <AddTripModal isOpen={isAddTripModalOpen} onClose={closeAddTripModal} />
@@ -234,26 +213,6 @@
     gap: 1.5rem;
     padding: 1rem;
     box-sizing: border-box;
-  }
-
-  .traveler-view.timeline-mode {
-    grid-template-columns: 1fr;
-    padding: 0;
-  }
-
-  .traveler-view.timeline-mode .main-content {
-    gap: 0;
-  }
-
-  .traveler-view.timeline-mode .layout-switcher {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-    z-index: 60;
-  }
-
-  .traveler-view.timeline-mode .viz-area {
-    border-radius: 0;
   }
 
   .main-content {
@@ -328,9 +287,15 @@
   .sidebar {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    overflow-y: auto;
+    gap: 1rem;
+    overflow: hidden;
     min-height: 0;
+  }
+
+  .sidebar > :global(:first-child) {
+    flex-shrink: 0;
+    max-height: 50%;
+    overflow-y: auto;
   }
 
   .location-info,
@@ -435,6 +400,9 @@
   :global(.trip-list-container) {
     flex: 1;
     min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   @media (max-width: 768px) {

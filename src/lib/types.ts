@@ -195,13 +195,13 @@ export const EDGE_LABEL_PRESETS: readonly string[] = [
 ];
 
 export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
-  repulsion: 5000,
-  attraction: 0.015,
-  idealDistance: 100,
-  centerGravity: 0.003,
-  damping: 0.4,
-  minDistance: 60,
-  alphaDecay: 0.99,
+  repulsion: 8000,
+  attraction: 0.012,
+  idealDistance: 120,
+  centerGravity: 0.002,
+  damping: 0.35,
+  minDistance: 100,
+  alphaDecay: 0.985,
   alphaMin: 0.001
 };
 

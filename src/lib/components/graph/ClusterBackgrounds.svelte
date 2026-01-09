@@ -18,16 +18,12 @@
 
   function handleClusterClick(cluster: ClusterData, event: MouseEvent) {
     event.stopPropagation();
-    console.log('Cluster clicked:', cluster.label, cluster.id);
-    // Focus on this cluster
     focusCluster(cluster.id);
     onClusterFocus?.(cluster);
   }
 
   function handleClusterDblClick(cluster: ClusterData, event: MouseEvent) {
     event.stopPropagation();
-    console.log('Cluster double-clicked:', cluster.label, cluster.id);
-    // Toggle expand state
     toggleClusterExpand(cluster.id);
     onClusterExpand?.(cluster);
   }
@@ -35,7 +31,6 @@
   function handleLabelMouseDown(cluster: ClusterData, event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    console.log('Cluster label mousedown:', cluster.label);
     isDragging = true;
     dragClusterId = cluster.id;
     dragStartX = event.clientX;

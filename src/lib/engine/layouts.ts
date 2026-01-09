@@ -14,7 +14,62 @@ import type {
   HierarchyLayoutConfig,
   ClusterData
 } from '$lib/types';
-import { NODE_TYPE_LABELS } from '$lib/types';
+import { NODE_TYPE_LABELS, NODE_SIZES } from '$lib/types';
+import { appStore } from '$lib/stores/appStore.svelte';
+
+// ============================================================================
+// COLLISION RESOLUTION
+// ============================================================================
+
+/**
+ * Get the visual radius of a node (including outer ring/glow)
+ */
+function getNodeRadius(node: GraphNode): number {
+  const baseSize = NODE_SIZES[node.type] ?? 14;
+  return baseSize + 15; // Account for outer glow/ring + padding
+}
+
+/**
+ * Resolve collisions between nodes by pushing overlapping nodes apart
+ * Uses multiple iterations to handle chain reactions
+ */
+function resolveCollisions(nodes: GraphNode[], iterations: number = 10): void {
+  const padding = 15; // Extra padding between nodes
+
+  for (let iter = 0; iter < iterations; iter++) {
+    let hasCollision = false;
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i];
+        const b = nodes[j];
+
+        const dx = (b.x ?? 0) - (a.x ?? 0);
+        const dy = (b.y ?? 0) - (a.y ?? 0);
+        const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+
+        const radiusA = getNodeRadius(a);
+        const radiusB = getNodeRadius(b);
+        const minDist = radiusA + radiusB + padding;
+
+        if (dist < minDist) {
+          hasCollision = true;
+          const overlap = minDist - dist;
+          const pushX = (dx / dist) * overlap * 0.5;
+          const pushY = (dy / dist) * overlap * 0.5;
+
+          a.x = (a.x ?? 0) - pushX;
+          a.y = (a.y ?? 0) - pushY;
+          b.x = (b.x ?? 0) + pushX;
+          b.y = (b.y ?? 0) + pushY;
+        }
+      }
+    }
+
+    // Exit early if no collisions detected
+    if (!hasCollision) break;
+  }
+}
 
 // Re-export LayoutMode as alias for LayoutType (backwards compatibility)
 export type LayoutMode = LayoutType;
@@ -190,6 +245,9 @@ export function computeRadialLayout(
   const ring4Radius = ringSpacing * 4.0;
   positionRingNodes(grouped.concept, skills, ring4Radius, centerX, centerY, adjacency, nodeById);
 
+  // Resolve any remaining collisions
+  resolveCollisions(result, 15);
+
   return result;
 }
 
@@ -357,6 +415,9 @@ export function computeTimelineLayout(
   // Apply collision avoidance within swim lanes
   resolveTimelineCollisions(result, swimLaneHeight);
 
+  // Also apply general collision resolution for cross-lane overlaps
+  resolveCollisions(result, 10);
+
   return result;
 }
 
@@ -364,8 +425,6 @@ export function computeTimelineLayout(
  * Resolve collisions in timeline layout
  */
 function resolveTimelineCollisions(nodes: GraphNode[], swimLaneHeight: number): void {
-  const minSpacing = 50;
-
   // Group by swim lane
   const grouped = groupNodesByType(nodes);
 
@@ -373,11 +432,16 @@ function resolveTimelineCollisions(nodes: GraphNode[], swimLaneHeight: number): 
     // Sort by x position
     laneNodes.sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
 
-    // Push overlapping nodes apart
+    // Push overlapping nodes apart using actual node sizes
     for (let i = 1; i < laneNodes.length; i++) {
       const prev = laneNodes[i - 1];
       const curr = laneNodes[i];
       const gap = (curr.x ?? 0) - (prev.x ?? 0);
+
+      // Calculate minimum spacing based on node radii
+      const radiusPrev = getNodeRadius(prev);
+      const radiusCurr = getNodeRadius(curr);
+      const minSpacing = radiusPrev + radiusCurr + 15;
 
       if (gap < minSpacing) {
         curr.x = (prev.x ?? 0) + minSpacing;
@@ -422,7 +486,7 @@ export function getTimelineAxisData(
   // Generate swim lane labels
   const swimLanes = Object.entries(TYPE_SWIM_LANES).map(([type, lane]) => ({
     type: type as NodeType,
-    label: NODE_TYPE_LABELS[type as NodeType],
+    label: appStore.getNodeTypeLabel(type as NodeType),
     y: padding + lane * swimLaneHeight + swimLaneHeight / 2
   }));
 
@@ -501,6 +565,9 @@ export function computeClusterLayout(
     clusterIndex++;
   });
 
+  // Resolve any remaining collisions
+  resolveCollisions(result, 15);
+
   return result;
 }
 
@@ -549,7 +616,7 @@ export function getClusterData(
 
     clusterDataList.push({
       id: clusterKey,
-      label: NODE_TYPE_LABELS[clusterKey as NodeType] ?? clusterKey,
+      label: appStore.getNodeTypeLabel(clusterKey as NodeType),
       x: centerX,
       y: centerY,
       radius: maxDist + nodePadding + 20,
@@ -567,7 +634,7 @@ export function getClusterData(
 // ============================================================================
 
 /**
- * Compute hierarchical layout - tree structure with BFS levels
+ * Compute hierarchical layout - tree structure using explicit parent fields or BFS
  */
 export function computeHierarchicalLayout(
   nodes: GraphNode[],
@@ -578,24 +645,57 @@ export function computeHierarchicalLayout(
   const levelHeight = config.levelHeight ?? 100;
   const nodeSpacing = config.nodeSpacing ?? 80;
 
-  // Build adjacency for traversal
-  const adjacency = buildAdjacencyMap(edges);
+  // Build parent-child relationships from explicit parent field
+  const childrenMap = new Map<string, string[]>(); // parent -> children
+  const nodeById = new Map(nodes.map(n => [n.id, n]));
 
-  // Find root nodes (goals, or nodes with no incoming edges)
-  const goals = nodes.filter(n => n.type === 'goal');
-  const roots = goals.length > 0 ? goals : [nodes[0]];
+  // Find nodes with explicit parents
+  const nodesWithParent = nodes.filter(n => n.parent && nodeById.has(n.parent));
+  const nodesWithoutParent = nodes.filter(n => !n.parent || !nodeById.has(n.parent));
 
-  // BFS to assign levels
-  const levels = new Map<string, number>();
-  const queue: { id: string; level: number }[] = [];
-  const visited = new Set<string>();
-
-  roots.forEach(root => {
-    if (root) {
-      queue.push({ id: root.id, level: 0 });
-      visited.add(root.id);
-      levels.set(root.id, 0);
+  // Build children map from explicit parent relationships
+  nodesWithParent.forEach(node => {
+    const parentId = node.parent!;
+    if (!childrenMap.has(parentId)) {
+      childrenMap.set(parentId, []);
     }
+    childrenMap.get(parentId)!.push(node.id);
+  });
+
+  // Determine levels using explicit hierarchy first
+  const levels = new Map<string, number>();
+
+  // Root nodes: goals without parents, or any node without a parent
+  const roots = nodesWithoutParent.filter(n => n.type === 'goal');
+  if (roots.length === 0) {
+    // If no goals, use nodes that aren't children of anything
+    const childIds = new Set(nodesWithParent.map(n => n.id));
+    const potentialRoots = nodes.filter(n => !childIds.has(n.id) && !n.parent);
+    if (potentialRoots.length > 0) {
+      roots.push(...potentialRoots);
+    } else if (nodes.length > 0) {
+      roots.push(nodes[0]);
+    }
+  }
+
+  // Assign levels using DFS from roots following explicit parent->child
+  function assignLevelDFS(nodeId: string, level: number) {
+    if (levels.has(nodeId)) return;
+    levels.set(nodeId, level);
+    const children = childrenMap.get(nodeId) || [];
+    children.forEach(childId => assignLevelDFS(childId, level + 1));
+  }
+
+  roots.forEach(root => assignLevelDFS(root.id, 0));
+
+  // For nodes still without levels, use edge-based BFS
+  const adjacency = buildAdjacencyMap(edges);
+  const visited = new Set(levels.keys());
+  const queue: { id: string; level: number }[] = [];
+
+  // Start BFS from nodes that have levels
+  levels.forEach((level, id) => {
+    queue.push({ id, level });
   });
 
   while (queue.length > 0) {
@@ -613,7 +713,7 @@ export function computeHierarchicalLayout(
     }
   }
 
-  // Add any unvisited nodes to the last level
+  // Add any remaining unvisited nodes
   const maxLevel = Math.max(...Array.from(levels.values()), 0);
   nodes.forEach(n => {
     if (!levels.has(n.id)) {
@@ -629,9 +729,9 @@ export function computeHierarchicalLayout(
     levelGroups.get(level)!.push(node);
   });
 
-  // Result array
+  // Result array with level information
   const result = nodes.map(n => ({ ...n, level: levels.get(n.id) ?? 0 }));
-  const nodeById = new Map(result.map(n => [n.id, n]));
+  const resultNodeById = new Map(result.map(n => [n.id, n]));
 
   // Position nodes by level
   const totalLevels = levelGroups.size;
@@ -646,7 +746,7 @@ export function computeHierarchicalLayout(
     const startX = centerX - totalWidth / 2;
 
     levelNodes.forEach((levelNode, i) => {
-      const node = nodeById.get(levelNode.id)!;
+      const node = resultNodeById.get(levelNode.id)!;
       node.x = startX + i * nodeSpacing;
       node.y = y;
       node.vx = 0;
@@ -654,30 +754,42 @@ export function computeHierarchicalLayout(
     });
   });
 
-  // Second pass: try to center children under their parents
-  for (let level = 1; level <= maxLevel + 1; level++) {
+  // Second pass: center children under their explicit or inferred parents
+  const finalMaxLevel = Math.max(...Array.from(levels.values()), 0);
+  for (let level = 1; level <= finalMaxLevel + 1; level++) {
     const levelNodes = levelGroups.get(level);
     if (!levelNodes) continue;
 
     levelNodes.forEach(levelNode => {
-      const node = nodeById.get(levelNode.id)!;
-      const neighbors = adjacency.get(levelNode.id);
+      const node = resultNodeById.get(levelNode.id)!;
+      const originalNode = nodeById.get(levelNode.id);
 
+      // First check explicit parent
+      if (originalNode?.parent) {
+        const parent = resultNodeById.get(originalNode.parent);
+        if (parent && parent.x !== undefined) {
+          node.x = parent.x;
+          return;
+        }
+      }
+
+      // Fall back to edge-based parent detection
+      const neighbors = adjacency.get(levelNode.id);
       if (neighbors) {
-        // Find parent nodes (neighbors in previous level)
         const parents = Array.from(neighbors)
-          .map(id => nodeById.get(id))
+          .map(id => resultNodeById.get(id))
           .filter(n => n && (levels.get(n.id) ?? 0) < level);
 
         if (parents.length > 0) {
-          // Average x position of parents
           const avgParentX = parents.reduce((sum, p) => sum + (p!.x ?? 0), 0) / parents.length;
-          // Nudge towards parent position
           node.x = (node.x ?? 0) * 0.6 + avgParentX * 0.4;
         }
       }
     });
   }
+
+  // Resolve collisions within each level
+  resolveCollisions(result, 15);
 
   return result;
 }

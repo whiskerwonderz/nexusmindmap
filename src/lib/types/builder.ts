@@ -86,11 +86,14 @@ export type BuilderNode =
 // BUILDER SETTINGS
 // ============================================
 
+export type BuilderNodeType = BuilderNode['type'];
+
 export interface BuilderSettings {
   layout: BuilderLayout;
   showLabels: boolean;
   showConnections: boolean;
   highlightConnected: boolean;
+  customNodeTypeLabels?: Partial<Record<BuilderNodeType, string>>;
 }
 
 export const DEFAULT_BUILDER_SETTINGS: BuilderSettings = {
@@ -98,6 +101,7 @@ export const DEFAULT_BUILDER_SETTINGS: BuilderSettings = {
   showLabels: true,
   showConnections: true,
   highlightConnected: true,
+  customNodeTypeLabels: {},
 };
 
 // ============================================

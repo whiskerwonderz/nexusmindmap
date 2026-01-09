@@ -87,12 +87,8 @@
   }
 
   onMount(() => {
-    console.log('=== Initializing Project Store ===');
-
     // Initialize the project store (creates default projects if none exist)
     projectStore.initialize();
-
-    console.log('=== Project Store Initialized ===');
   });
 </script>
 

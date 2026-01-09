@@ -9,6 +9,16 @@ import type { LayoutType, ClusterData } from '$lib/types';
 // Default to radial layout for clear visualization
 export const layoutMode = writable<LayoutType>('radial');
 
+// Trigger counter to force layout recalculation (increment to trigger)
+export const layoutTrigger = writable<number>(0);
+
+/**
+ * Force re-apply the current layout (used after loading new project data)
+ */
+export function forceRelayout(): void {
+  layoutTrigger.update(n => n + 1);
+}
+
 // Timeline-specific state
 export interface TimelineRange {
   start: number; // 0-1 percentage

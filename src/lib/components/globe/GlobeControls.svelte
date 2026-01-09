@@ -1,8 +1,9 @@
 <script lang="ts">
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
-  import type { ArcColorScheme, GlobeStyle, DisplayMode } from '$lib/types/traveler';
-  import { exportTripsToJSON, exportTripsToCSV, importFromJSON, importFromCSV, validateImportedTrips } from '$lib/utils/dataExport';
+  import type { GlobeStyle, DisplayMode } from '$lib/types/traveler';
+  import { exportTripsToJSON, exportTripsToCSV, exportShareableMap } from '$lib/utils/dataExport';
+  import { projectStore } from '$lib/stores/projectStore.svelte';
 
   interface Props {
     onResetView?: () => void;
@@ -12,37 +13,17 @@
 
   let { onResetView, onFocusHome, class: className = '' }: Props = $props();
 
-  let fileInput: HTMLInputElement;
-  let aiFileInput: HTMLInputElement;
   let isExporting = $state(false);
-  let isImporting = $state(false);
-
-  // n8n webhook URL for AI-powered import (configure in environment or settings)
-  const AI_IMPORT_WEBHOOK = 'https://n8n.nullis.pl/webhook/ai-import-trips';
 
   // Use direct getters for reactive individual settings
   const autoRotate = $derived(travelerStore.autoRotate);
   const animateArcs = $derived(travelerStore.animateArcs);
   const globeStyleValue = $derived(travelerStore.globeStyle);
-  const colorSchemeValue = $derived(travelerStore.colorScheme);
   const displayModeValue = $derived(travelerStore.displayMode);
   const settings = $derived(travelerStore.settings);
   const availableYears = $derived(travelerStore.availableYears);
   const journeyCount = $derived(travelerStore.journeyCount);
   const destinationCount = $derived(travelerStore.destinationCount);
-
-  const displayModes: { value: DisplayMode; label: string }[] = [
-    { value: 'all', label: 'All' },
-    { value: 'journeys', label: 'Journeys' },
-    { value: 'destinations', label: 'Destinations' },
-  ];
-
-  const colorSchemes: { value: ArcColorScheme; label: string; preview: string[] }[] = [
-    { value: 'cosmic', label: 'Cosmic', preview: ['#00d4ff', '#a855f7'] },
-    { value: 'sunset', label: 'Sunset', preview: ['#f97316', '#ec4899'] },
-    { value: 'ocean', label: 'Ocean', preview: ['#0ea5e9', '#14b8a6'] },
-    { value: 'mono', label: 'Mono', preview: ['#e2e8f0', '#94a3b8'] },
-  ];
 
   const globeStyles: { value: GlobeStyle; label: string }[] = [
     { value: 'night', label: 'Night' },
@@ -80,108 +61,16 @@
     }
   }
 
-  function triggerImport(): void {
-    fileInput?.click();
-  }
-
-  async function handleFileImport(e: Event): Promise<void> {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    isImporting = true;
+  function handleExportShareableMap(): void {
+    isExporting = true;
     try {
-      const isCSV = file.name.toLowerCase().endsWith('.csv');
-
-      if (isCSV) {
-        // Import from CSV
-        const trips = await importFromCSV(file);
-        if (trips.length > 0) {
-          trips.forEach(trip => travelerStore.addTrip(trip));
-          toastStore.success(`Successfully imported ${trips.length} trip${trips.length > 1 ? 's' : ''} from CSV!`);
-        } else {
-          toastStore.warning('No valid trips found in the CSV file.');
-        }
-      } else {
-        // Import from JSON
-        const data = await importFromJSON(file);
-        if (data.type === 'trips' && data.trips) {
-          const validTrips = validateImportedTrips(data.trips);
-          if (validTrips.length > 0) {
-            validTrips.forEach(trip => travelerStore.addTrip(trip));
-            toastStore.success(`Successfully imported ${validTrips.length} trip${validTrips.length > 1 ? 's' : ''}!`);
-          } else {
-            toastStore.warning('No valid trips found in the file.');
-          }
-        }
-      }
-    } catch (error) {
-      toastStore.error(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const projectName = projectStore.currentTravelerProject?.name || 'My Travel Map';
+      exportShareableMap(travelerStore.trips, projectName);
+      toastStore.success('Shareable map exported as HTML');
+    } catch {
+      toastStore.error('Failed to export shareable map');
     } finally {
-      isImporting = false;
-      target.value = '';
-    }
-  }
-
-  function triggerAIImport(): void {
-    aiFileInput?.click();
-  }
-
-  async function handleAIFileImport(e: Event): Promise<void> {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    isImporting = true;
-    try {
-      // Read file content
-      const content = await file.text();
-
-      // Send to n8n webhook for AI processing
-      const response = await fetch(AI_IMPORT_WEBHOOK, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          filename: file.name,
-          content: content,
-          type: 'traveler-trips',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`AI Import failed: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
-      if (result.trips && Array.isArray(result.trips)) {
-        result.trips.forEach((trip: any) => {
-          // Ensure required fields exist
-          if (trip.label && trip.metadata?.locations?.length > 0) {
-            travelerStore.addTrip({
-              id: `ai-import-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-              type: 'trip',
-              label: trip.label,
-              description: trip.description,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              sourceMode: 'traveler',
-              metadata: trip.metadata,
-            });
-          }
-        });
-        toastStore.success(`AI imported ${result.trips.length} trip${result.trips.length > 1 ? 's' : ''}!`);
-      } else {
-        toastStore.warning('AI could not parse any trips from the file.');
-      }
-    } catch (error) {
-      console.error('AI Import error:', error);
-      toastStore.error(`AI Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      isImporting = false;
-      target.value = '';
+      isExporting = false;
     }
   }
 </script>
@@ -278,22 +167,6 @@
   {/if}
 
   <div class="control-section">
-    <h4 class="section-title">Arc Colors</h4>
-    <div class="color-schemes">
-      {#each colorSchemes as scheme}
-        <button type="button" class="color-scheme-btn" class:active={colorSchemeValue === scheme.value}
-          onclick={() => travelerStore.setColorScheme(scheme.value)}>
-          <div class="color-preview">
-            <span style="background: {scheme.preview[0]}"></span>
-            <span style="background: {scheme.preview[1]}"></span>
-          </div>
-          <span class="scheme-label">{scheme.label}</span>
-        </button>
-      {/each}
-    </div>
-  </div>
-
-  <div class="control-section">
     <h4 class="section-title">Globe Style</h4>
     <div class="globe-styles">
       {#each globeStyles as style}
@@ -306,63 +179,45 @@
   </div>
 
   <div class="control-section">
-    <h4 class="section-title">Data</h4>
-    <div class="data-buttons">
-      <button type="button" class="data-btn" onclick={handleExportCSV} disabled={isExporting}>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-        </svg>
-        Export CSV
-      </button>
-      <div class="import-row">
-        <button type="button" class="data-btn import" onclick={triggerImport} disabled={isImporting}>
+    <h4 class="section-title">Export</h4>
+
+    <!-- DATA exports -->
+    <div class="export-category">
+      <span class="category-label">DATA</span>
+      <div class="data-buttons">
+        <button type="button" class="data-btn" onclick={handleExportJSON} disabled={isExporting}>
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
           </svg>
-          {isImporting ? 'Importing...' : 'Import CSV'}
+          JSON
         </button>
-        <div class="help-tooltip">
-          <button type="button" class="help-btn" title="CSV Format Help">?</button>
-          <div class="tooltip-content">
-            <p><strong>Expected CSV columns:</strong></p>
-            <ul>
-              <li>Trip Name (required)</li>
-              <li>Start Date (YYYY-MM-DD)</li>
-              <li>End Date (YYYY-MM-DD)</li>
-              <li>Locations (e.g., Paris → Rome)</li>
-              <li>Category (leisure/business/family)</li>
-              <li>Description</li>
-            </ul>
-            <p class="tip">Tip: Export first to see the exact format!</p>
-          </div>
-        </div>
+        <button type="button" class="data-btn" onclick={handleExportCSV} disabled={isExporting}>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          CSV
+        </button>
       </div>
-      <button type="button" class="data-btn ai-import" onclick={triggerAIImport} disabled={isImporting}>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A1.5 1.5 0 1 0 9 14.5 1.5 1.5 0 0 0 7.5 13m9 0a1.5 1.5 0 1 0 1.5 1.5 1.5 1.5 0 0 0-1.5-1.5"/>
-        </svg>
-        {isImporting ? 'Processing...' : 'AI Import (any format)'}
-      </button>
     </div>
-    <input
-      type="file"
-      accept=".csv"
-      class="hidden-input"
-      bind:this={fileInput}
-      onchange={handleFileImport}
-    />
-    <input
-      type="file"
-      accept=".csv,.txt,.xlsx"
-      class="hidden-input"
-      bind:this={aiFileInput}
-      onchange={handleAIFileImport}
-    />
+
+    <!-- VISUAL exports -->
+    <div class="export-category">
+      <span class="category-label">VISUAL</span>
+      <div class="data-buttons">
+        <button type="button" class="data-btn visual" onclick={handleExportShareableMap} disabled={isExporting}>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          Export Map
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -427,13 +282,13 @@
     color: white;
   }
 
-  .color-schemes, .globe-styles {
+  .globe-styles {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
   }
 
-  .color-scheme-btn, .style-btn {
+  .style-btn {
     padding: 0.5rem;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -443,24 +298,13 @@
     transition: all 0.15s ease;
   }
 
-  .color-scheme-btn:hover, .style-btn:hover { background: rgba(255, 255, 255, 0.08); }
+  .style-btn:hover { background: rgba(255, 255, 255, 0.08); }
 
-  .color-scheme-btn.active, .style-btn.active {
+  .style-btn.active {
     border-color: #00d4ff;
     background: rgba(0, 212, 255, 0.1);
     color: white;
   }
-
-  .color-scheme-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.375rem;
-  }
-
-  .color-preview { display: flex; gap: 2px; }
-  .color-preview span { width: 20px; height: 12px; border-radius: 2px; }
-  .scheme-label { font-size: 0.75rem; }
 
   /* Display mode styles */
   .display-modes {
@@ -549,110 +393,34 @@
     cursor: not-allowed;
   }
 
-  .data-btn.import {
-    background: rgba(0, 212, 255, 0.1);
-    border-color: rgba(0, 212, 255, 0.2);
-    color: #00d4ff;
+  .data-btn.visual {
+    background: rgba(147, 51, 234, 0.1);
+    border-color: rgba(147, 51, 234, 0.25);
+    color: rgb(196, 167, 231);
   }
 
-  .data-btn.import:hover:not(:disabled) {
-    background: rgba(0, 212, 255, 0.2);
+  .data-btn.visual:hover:not(:disabled) {
+    background: rgba(147, 51, 234, 0.2);
+    color: rgb(216, 180, 254);
   }
 
-  .hidden-input {
-    display: none;
-  }
-
-  /* Import row with help tooltip */
-  .import-row {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .import-row .data-btn {
-    flex: 1;
-  }
-
-  .help-tooltip {
-    position: relative;
-  }
-
-  .help-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.7rem;
-    font-weight: 600;
-    cursor: help;
-    transition: all 0.15s ease;
-  }
-
-  .help-btn:hover {
-    background: rgba(0, 212, 255, 0.2);
-    border-color: rgba(0, 212, 255, 0.4);
-    color: #00d4ff;
-  }
-
-  .tooltip-content {
-    display: none;
-    position: absolute;
-    bottom: 100%;
-    right: 0;
-    width: 220px;
-    padding: 0.75rem;
-    background: #1a1a2e;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.9);
-    z-index: 100;
+  /* Export categories */
+  .export-category {
     margin-bottom: 0.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
-  .help-tooltip:hover .tooltip-content {
+  .export-category:last-child {
+    margin-bottom: 0;
+  }
+
+  .category-label {
     display: block;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.35);
+    margin-bottom: 0.375rem;
   }
 
-  .tooltip-content p {
-    margin: 0 0 0.5rem;
-  }
-
-  .tooltip-content ul {
-    margin: 0;
-    padding-left: 1rem;
-    list-style: disc;
-  }
-
-  .tooltip-content li {
-    margin-bottom: 0.25rem;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .tooltip-content .tip {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    font-style: italic;
-    color: #00d4ff;
-  }
-
-  /* AI Import button */
-  .data-btn.ai-import {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15));
-    border-color: rgba(168, 85, 247, 0.3);
-    color: #c084fc;
-  }
-
-  .data-btn.ai-import:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(236, 72, 153, 0.25));
-    color: #e879f9;
-  }
-</style>
+  </style>

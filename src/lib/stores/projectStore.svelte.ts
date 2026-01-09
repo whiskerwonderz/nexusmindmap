@@ -17,6 +17,7 @@ import { DEFAULT_TRAVELER_SETTINGS } from '$lib/types/traveler';
 import type { Edge } from '$lib/types/common';
 import { appStore } from './appStore.svelte';
 import { loadData as loadGraphData, clear as clearGraph } from './graph';
+import { forceRelayout } from './layout';
 
 // Import demo data
 import exampleData from '$lib/data/example.json';
@@ -239,6 +240,7 @@ function loadProject_(mode: 'builder' | 'traveler', projectId: string): boolean 
         type: n.type,
         description: n.description,
         date: n.date,
+        parent: n.parent,
       })),
       edges: project.edges.map(e => ({
         id: e.id,
@@ -249,6 +251,9 @@ function loadProject_(mode: 'builder' | 'traveler', projectId: string): boolean 
     });
 
     index.currentBuilder = projectId;
+
+    // Trigger layout recalculation after loading
+    setTimeout(() => forceRelayout(), 100);
   } else if (mode === 'traveler' && project.mode === 'traveler') {
     // Clear existing traveler data
     clearTravelerData();
@@ -491,6 +496,59 @@ function createProjectWithDemoData(): ProjectMeta {
 }
 
 // ============================================
+// LOAD DEMO PROJECT
+// ============================================
+
+const DEMO_PROJECT_PREFIX = 'Demo';
+
+/**
+ * Load or create demo project for a specific mode
+ * Always recreates demo from fresh JSON data to ensure latest content
+ * Does NOT delete user projects - only replaces demo project
+ */
+function loadDemoProject(mode: 'builder' | 'traveler'): void {
+  if (typeof window === 'undefined') return;
+
+  isLoading = true;
+
+  try {
+    // Save current project if there are unsaved changes
+    if (hasUnsavedChanges) {
+      saveCurrentProject(mode);
+    }
+
+    if (mode === 'builder') {
+      // Delete existing demo project if it exists (to get fresh data)
+      const existingDemo = index.builder.find(p => p.name.startsWith(DEMO_PROJECT_PREFIX));
+      if (existingDemo) {
+        deleteProjectStorage(getStorageKey('builder', existingDemo.id));
+        index.builder = index.builder.filter(p => p.id !== existingDemo.id);
+      }
+      // Create fresh demo project from JSON
+      createProjectWithDemoData();
+      // Trigger layout recalculation for builder graph (nodes don't have positions)
+      setTimeout(() => forceRelayout(), 100);
+    } else {
+      // Delete existing demo project if it exists (to get fresh data)
+      const existingDemo = index.traveler.find(p => p.name.startsWith(DEMO_PROJECT_PREFIX));
+      if (existingDemo) {
+        deleteProjectStorage(getStorageKey('traveler', existingDemo.id));
+        index.traveler = index.traveler.filter(p => p.id !== existingDemo.id);
+      }
+      // Create fresh demo project from JSON
+      createTravelerProjectWithDemoData();
+    }
+
+    saveIndex(index);
+    hasUnsavedChanges = false;
+  } catch (e) {
+    console.error('Failed to load demo project:', e);
+  } finally {
+    isLoading = false;
+  }
+}
+
+// ============================================
 // EXPORT STORE
 // ============================================
 
@@ -514,4 +572,5 @@ export const projectStore = {
   getProjects,
   markUnsaved,
   initialize,
+  loadDemoProject,
 };

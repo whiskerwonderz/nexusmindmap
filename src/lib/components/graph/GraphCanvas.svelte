@@ -17,6 +17,7 @@
   } from '$lib/stores/graph';
   import {
     layoutMode,
+    layoutTrigger,
     clusterData,
     setClusterData,
     focusCluster,
@@ -69,7 +70,6 @@
       const currentNodes = get(nodes);
       const mode = get(layoutMode);
       if (currentNodes.length > 0 && width > 0 && height > 0 && !hasInitialized) {
-        console.log('Initial layout with mode:', mode);
         applyCurrentLayout(mode);
         hasInitialized = true;
         previousMode = mode;
@@ -77,19 +77,34 @@
     }, 100);
 
     // Subscribe to mode changes
-    const unsubscribe = layoutMode.subscribe((mode) => {
+    const unsubscribeMode = layoutMode.subscribe((mode) => {
       if (hasInitialized && previousMode !== null && previousMode !== mode) {
-        console.log('Mode changed:', previousMode, '->', mode);
         applyCurrentLayout(mode);
       }
       previousMode = mode;
+    });
+
+    // Subscribe to layout trigger (force re-layout when loading new data)
+    let initialTrigger = true;
+    const unsubscribeTrigger = layoutTrigger.subscribe(() => {
+      // Skip the initial subscription call
+      if (initialTrigger) {
+        initialTrigger = false;
+        return;
+      }
+      const currentNodes = get(nodes);
+      const mode = get(layoutMode);
+      if (currentNodes.length > 0 && width > 0 && height > 0) {
+        applyCurrentLayout(mode);
+      }
     });
 
     return () => {
       window.removeEventListener('resize', handleResize);
       if (animationFrame) cancelAnimationFrame(animationFrame);
       simulation?.stop();
-      unsubscribe();
+      unsubscribeMode();
+      unsubscribeTrigger();
     };
   });
 
@@ -276,7 +291,6 @@
   }
 
   function handleNodeClick(nodeId: string) {
-    console.log('Node clicked:', nodeId);
     const current = get(selectedNodeId);
     selectNode(current === nodeId ? null : nodeId);
   }
@@ -303,10 +317,9 @@
   }
 
   // Cluster interaction handlers
-  function handleClusterFocus(cluster: ClusterData) {
+  function handleClusterFocus(_cluster: ClusterData) {
     // The focus state is already set in ClusterBackgrounds
     // This could be used to trigger zoom/pan to cluster center
-    console.log('Cluster focused:', cluster.label);
   }
 
   function handleClusterExpand(cluster: ClusterData) {
@@ -315,12 +328,8 @@
     const nowExpanded = get(expandedClusters).has(cluster.id);
     const expansionFactor = nowExpanded ? 1.5 : (1 / 1.5); // Expand or contract
 
-    console.log('Cluster expand:', cluster.label, 'nowExpanded:', nowExpanded, 'factor:', expansionFactor);
-
     const currentNodes = get(nodes);
     const clusterNodeIds = new Set(cluster.nodeIds);
-
-    console.log('Cluster nodeIds:', cluster.nodeIds);
 
     const updatedNodes = currentNodes.map(node => {
       if (!clusterNodeIds.has(node.id)) return node;
@@ -424,25 +433,27 @@
       />
     {/each}
 
-    <!-- Edges layer -->
-    <g class="edges">
-      {#each $edges as edge (edge.id)}
-        {@const map = $nodeMap}
-        {@const sourceNode = map.get(edge.from)}
-        {@const targetNode = map.get(edge.to)}
-        {#if sourceNode && targetNode}
-          <GraphEdge
-            {edge}
-            {sourceNode}
-            {targetNode}
-            isHighlighted={$connectedNodeIds.has(edge.from) && $connectedNodeIds.has(edge.to)}
-            color={getEdgeColor(edge.from)}
-            clusters={$layoutMode === 'cluster' ? clusterBackgrounds : []}
-            enableBundling={$layoutMode === 'cluster'}
-          />
-        {/if}
-      {/each}
-    </g>
+    <!-- Edges layer (hidden in cluster mode) -->
+    {#if $layoutMode !== 'cluster'}
+      <g class="edges">
+        {#each $edges as edge (edge.id)}
+          {@const map = $nodeMap}
+          {@const sourceNode = map.get(edge.from)}
+          {@const targetNode = map.get(edge.to)}
+          {#if sourceNode && targetNode}
+            <GraphEdge
+              {edge}
+              {sourceNode}
+              {targetNode}
+              isHighlighted={$connectedNodeIds.has(edge.from) && $connectedNodeIds.has(edge.to)}
+              color={getEdgeColor(edge.from)}
+              clusters={[]}
+              enableBundling={false}
+            />
+          {/if}
+        {/each}
+      </g>
+    {/if}
 
     <!-- Nodes layer -->
     <g class="nodes">
