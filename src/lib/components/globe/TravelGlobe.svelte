@@ -240,12 +240,7 @@
 </script>
 
 <div class="globe-container {className}" bind:this={container}>
-  {#if isLoading}
-    <div class="globe-loading">
-      <div class="loading-spinner"></div>
-      <span>Loading globe...</span>
-    </div>
-  {:else if webglError}
+  {#if webglError}
     <div class="globe-error">
       <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10" />
@@ -254,6 +249,11 @@
       </svg>
       <p>{webglError}</p>
       <span class="error-hint">Switch to "Map" view for a 2D alternative</span>
+    </div>
+  {:else if isLoading}
+    <div class="globe-loading">
+      <div class="loading-spinner"></div>
+      <span>Loading globe...</span>
     </div>
   {/if}
 </div>
