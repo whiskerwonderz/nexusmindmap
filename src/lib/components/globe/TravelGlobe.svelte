@@ -20,6 +20,22 @@
   let resizeObserver: ResizeObserver | null = null;
   let isReady = $state(false);
   let isLoading = $state(true);
+  let webglError = $state<string | null>(null);
+
+  function checkWebGLSupport(): boolean {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (!gl) {
+        webglError = 'WebGL is not supported in your browser. Please try Chrome or Safari.';
+        return false;
+      }
+      return true;
+    } catch {
+      webglError = 'WebGL initialization failed. Please try a different browser.';
+      return false;
+    }
+  }
 
   // Derived data for globe layers
   const arcs = $derived(travelerStore.arcs);
@@ -30,6 +46,12 @@
   });
 
   async function initGlobe(): Promise<void> {
+    // Check WebGL support first
+    if (!checkWebGLSupport()) {
+      isLoading = false;
+      return;
+    }
+
     try {
       // Dynamic import to avoid SSR issues
       const GlobeGL = (await import('globe.gl')).default;
@@ -118,6 +140,7 @@
       resizeObserver.observe(container);
     } catch (error) {
       console.error('Failed to initialize globe:', error);
+      webglError = 'Globe failed to load. Try using the 2D Map view instead.';
       isLoading = false;
     }
   }
@@ -222,6 +245,16 @@
       <div class="loading-spinner"></div>
       <span>Loading globe...</span>
     </div>
+  {:else if webglError}
+    <div class="globe-error">
+      <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <p>{webglError}</p>
+      <span class="error-hint">Switch to "Map" view for a 2D alternative</span>
+    </div>
   {/if}
 </div>
 
@@ -245,7 +278,8 @@
     touch-action: none; /* Let globe.gl handle touch */
   }
 
-  .globe-loading {
+  .globe-loading,
+  .globe-error {
     position: absolute;
     inset: 0;
     display: flex;
@@ -254,6 +288,28 @@
     justify-content: center;
     gap: 1rem;
     color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+  }
+
+  .globe-error {
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .error-icon {
+    width: 48px;
+    height: 48px;
+    color: rgba(251, 146, 60, 0.8);
+  }
+
+  .globe-error p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+  }
+
+  .error-hint {
+    color: rgba(0, 212, 255, 0.8);
     font-size: 0.875rem;
   }
 
