@@ -2,7 +2,7 @@
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
   import type { ArcColorScheme, GlobeStyle, DisplayMode } from '$lib/types/traveler';
-  import { exportTripsToJSON, exportTripsToCSV, importFromJSON, validateImportedTrips } from '$lib/utils/dataExport';
+  import { exportTripsToJSON, exportTripsToCSV, importFromJSON, importFromCSV, validateImportedTrips } from '$lib/utils/dataExport';
 
   interface Props {
     onResetView?: () => void;
@@ -13,8 +13,12 @@
   let { onResetView, onFocusHome, class: className = '' }: Props = $props();
 
   let fileInput: HTMLInputElement;
+  let aiFileInput: HTMLInputElement;
   let isExporting = $state(false);
   let isImporting = $state(false);
+
+  // n8n webhook URL for AI-powered import (configure in environment or settings)
+  const AI_IMPORT_WEBHOOK = 'https://n8n.nullis.pl/webhook/ai-import-trips';
 
   // Use direct getters for reactive individual settings
   const autoRotate = $derived(travelerStore.autoRotate);
@@ -87,18 +91,94 @@
 
     isImporting = true;
     try {
-      const data = await importFromJSON(file);
-      if (data.type === 'trips' && data.trips) {
-        const validTrips = validateImportedTrips(data.trips);
-        if (validTrips.length > 0) {
-          validTrips.forEach(trip => travelerStore.addTrip(trip));
-          toastStore.success(`Successfully imported ${validTrips.length} trip${validTrips.length > 1 ? 's' : ''}!`);
+      const isCSV = file.name.toLowerCase().endsWith('.csv');
+
+      if (isCSV) {
+        // Import from CSV
+        const trips = await importFromCSV(file);
+        if (trips.length > 0) {
+          trips.forEach(trip => travelerStore.addTrip(trip));
+          toastStore.success(`Successfully imported ${trips.length} trip${trips.length > 1 ? 's' : ''} from CSV!`);
         } else {
-          toastStore.warning('No valid trips found in the file.');
+          toastStore.warning('No valid trips found in the CSV file.');
+        }
+      } else {
+        // Import from JSON
+        const data = await importFromJSON(file);
+        if (data.type === 'trips' && data.trips) {
+          const validTrips = validateImportedTrips(data.trips);
+          if (validTrips.length > 0) {
+            validTrips.forEach(trip => travelerStore.addTrip(trip));
+            toastStore.success(`Successfully imported ${validTrips.length} trip${validTrips.length > 1 ? 's' : ''}!`);
+          } else {
+            toastStore.warning('No valid trips found in the file.');
+          }
         }
       }
     } catch (error) {
       toastStore.error(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      isImporting = false;
+      target.value = '';
+    }
+  }
+
+  function triggerAIImport(): void {
+    aiFileInput?.click();
+  }
+
+  async function handleAIFileImport(e: Event): Promise<void> {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    isImporting = true;
+    try {
+      // Read file content
+      const content = await file.text();
+
+      // Send to n8n webhook for AI processing
+      const response = await fetch(AI_IMPORT_WEBHOOK, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filename: file.name,
+          content: content,
+          type: 'traveler-trips',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI Import failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.trips && Array.isArray(result.trips)) {
+        result.trips.forEach((trip: any) => {
+          // Ensure required fields exist
+          if (trip.label && trip.metadata?.locations?.length > 0) {
+            travelerStore.addTrip({
+              id: `ai-import-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              type: 'trip',
+              label: trip.label,
+              description: trip.description,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              sourceMode: 'traveler',
+              metadata: trip.metadata,
+            });
+          }
+        });
+        toastStore.success(`AI imported ${result.trips.length} trip${result.trips.length > 1 ? 's' : ''}!`);
+      } else {
+        toastStore.warning('AI could not parse any trips from the file.');
+      }
+    } catch (error) {
+      console.error('AI Import error:', error);
+      toastStore.error(`AI Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       isImporting = false;
       target.value = '';
@@ -228,14 +308,6 @@
   <div class="control-section">
     <h4 class="section-title">Data</h4>
     <div class="data-buttons">
-      <button type="button" class="data-btn" onclick={handleExportJSON} disabled={isExporting}>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Export JSON
-      </button>
       <button type="button" class="data-btn" onclick={handleExportCSV} disabled={isExporting}>
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -245,21 +317,51 @@
         </svg>
         Export CSV
       </button>
-      <button type="button" class="data-btn import" onclick={triggerImport} disabled={isImporting}>
+      <div class="import-row">
+        <button type="button" class="data-btn import" onclick={triggerImport} disabled={isImporting}>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          {isImporting ? 'Importing...' : 'Import CSV'}
+        </button>
+        <div class="help-tooltip">
+          <button type="button" class="help-btn" title="CSV Format Help">?</button>
+          <div class="tooltip-content">
+            <p><strong>Expected CSV columns:</strong></p>
+            <ul>
+              <li>Trip Name (required)</li>
+              <li>Start Date (YYYY-MM-DD)</li>
+              <li>End Date (YYYY-MM-DD)</li>
+              <li>Locations (e.g., Paris → Rome)</li>
+              <li>Category (leisure/business/family)</li>
+              <li>Description</li>
+            </ul>
+            <p class="tip">Tip: Export first to see the exact format!</p>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="data-btn ai-import" onclick={triggerAIImport} disabled={isImporting}>
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
+          <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A1.5 1.5 0 1 0 9 14.5 1.5 1.5 0 0 0 7.5 13m9 0a1.5 1.5 0 1 0 1.5 1.5 1.5 1.5 0 0 0-1.5-1.5"/>
         </svg>
-        {isImporting ? 'Importing...' : 'Import'}
+        {isImporting ? 'Processing...' : 'AI Import (any format)'}
       </button>
     </div>
     <input
       type="file"
-      accept=".json"
+      accept=".csv"
       class="hidden-input"
       bind:this={fileInput}
       onchange={handleFileImport}
+    />
+    <input
+      type="file"
+      accept=".csv,.txt,.xlsx"
+      class="hidden-input"
+      bind:this={aiFileInput}
+      onchange={handleAIFileImport}
     />
   </div>
 </div>
@@ -459,5 +561,98 @@
 
   .hidden-input {
     display: none;
+  }
+
+  /* Import row with help tooltip */
+  .import-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .import-row .data-btn {
+    flex: 1;
+  }
+
+  .help-tooltip {
+    position: relative;
+  }
+
+  .help-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: help;
+    transition: all 0.15s ease;
+  }
+
+  .help-btn:hover {
+    background: rgba(0, 212, 255, 0.2);
+    border-color: rgba(0, 212, 255, 0.4);
+    color: #00d4ff;
+  }
+
+  .tooltip-content {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    width: 220px;
+    padding: 0.75rem;
+    background: #1a1a2e;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+    z-index: 100;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .help-tooltip:hover .tooltip-content {
+    display: block;
+  }
+
+  .tooltip-content p {
+    margin: 0 0 0.5rem;
+  }
+
+  .tooltip-content ul {
+    margin: 0;
+    padding-left: 1rem;
+    list-style: disc;
+  }
+
+  .tooltip-content li {
+    margin-bottom: 0.25rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .tooltip-content .tip {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-style: italic;
+    color: #00d4ff;
+  }
+
+  /* AI Import button */
+  .data-btn.ai-import {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15));
+    border-color: rgba(168, 85, 247, 0.3);
+    color: #c084fc;
+  }
+
+  .data-btn.ai-import:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(236, 72, 153, 0.25));
+    color: #e879f9;
   }
 </style>

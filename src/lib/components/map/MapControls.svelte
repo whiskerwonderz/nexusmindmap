@@ -2,7 +2,7 @@
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
   import type { ArcColorScheme, DisplayMode } from '$lib/types/traveler';
-  import { exportTripsToJSON, exportTripsToCSV, importFromJSON, validateImportedTrips } from '$lib/utils/dataExport';
+  import { exportTripsToJSON, exportTripsToCSV, importFromJSON, importFromCSV, validateImportedTrips } from '$lib/utils/dataExport';
 
   interface Props {
     onResetView?: () => void;
@@ -89,14 +89,28 @@
 
     isImporting = true;
     try {
-      const data = await importFromJSON(file);
-      if (data.type === 'trips' && data.trips) {
-        const validTrips = validateImportedTrips(data.trips);
-        if (validTrips.length > 0) {
-          validTrips.forEach(trip => travelerStore.addTrip(trip));
-          toastStore.success(`Successfully imported ${validTrips.length} trip${validTrips.length > 1 ? 's' : ''}!`);
+      const isCSV = file.name.toLowerCase().endsWith('.csv');
+
+      if (isCSV) {
+        // Import from CSV
+        const trips = await importFromCSV(file);
+        if (trips.length > 0) {
+          trips.forEach(trip => travelerStore.addTrip(trip));
+          toastStore.success(`Successfully imported ${trips.length} trip${trips.length > 1 ? 's' : ''} from CSV!`);
         } else {
-          toastStore.warning('No valid trips found in the file.');
+          toastStore.warning('No valid trips found in the CSV file.');
+        }
+      } else {
+        // Import from JSON
+        const data = await importFromJSON(file);
+        if (data.type === 'trips' && data.trips) {
+          const validTrips = validateImportedTrips(data.trips);
+          if (validTrips.length > 0) {
+            validTrips.forEach(trip => travelerStore.addTrip(trip));
+            toastStore.success(`Successfully imported ${validTrips.length} trip${validTrips.length > 1 ? 's' : ''}!`);
+          } else {
+            toastStore.warning('No valid trips found in the file.');
+          }
         }
       }
     } catch (error) {
@@ -216,14 +230,6 @@
   <div class="control-section">
     <h4 class="section-title">Data</h4>
     <div class="data-buttons">
-      <button type="button" class="data-btn" onclick={handleExportJSON} disabled={isExporting}>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Export JSON
-      </button>
       <button type="button" class="data-btn" onclick={handleExportCSV} disabled={isExporting}>
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -239,12 +245,12 @@
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        {isImporting ? 'Importing...' : 'Import'}
+        {isImporting ? 'Importing...' : 'Import CSV'}
       </button>
     </div>
     <input
       type="file"
-      accept=".json"
+      accept=".csv"
       class="hidden-input"
       bind:this={fileInput}
       onchange={handleFileImport}

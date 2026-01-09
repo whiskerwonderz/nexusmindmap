@@ -11,13 +11,18 @@
   import TravelerView from '$lib/components/traveler/TravelerView.svelte';
   import { nodes, edges, loadData } from '$lib/stores/graph';
   import { appStore } from '$lib/stores/appStore.svelte';
+  import { projectStore } from '$lib/stores/projectStore.svelte';
+  import { toastStore } from '$lib/stores/toastStore.svelte';
   import type { GraphNode, GraphData } from '$lib/types';
 
-  // Import example data
+  // Import example data for demo
   import exampleData from '$lib/data/example.json';
 
   // Mode state
   const mode = $derived(appStore.mode);
+
+  // Header ref for opening project manager
+  let headerComponent: Header;
 
   // Modal states
   let isAddNodeModalOpen = $state(false);
@@ -65,46 +70,29 @@
     connectionSourceNodeId = null;
   }
 
+  // Keyboard shortcuts handler
+  function handleKeydown(e: KeyboardEvent): void {
+    // Ctrl/Cmd + S - Save project
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      projectStore.saveCurrentProject(appStore.mode);
+      toastStore.success('Project saved');
+    }
+
+    // Ctrl/Cmd + N - New project (opens project manager)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      e.preventDefault();
+      headerComponent?.openProjectManager();
+    }
+  }
+
   onMount(() => {
-    console.log('=== onMount START ===');
-    console.log('Example data nodes:', exampleData.nodes?.length);
+    console.log('=== Initializing Project Store ===');
 
-    // Get center coordinates
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    console.log('Center:', centerX, centerY);
+    // Initialize the project store (creates default projects if none exist)
+    projectStore.initialize();
 
-    // Create nodes with positions - start closer together for better physics
-    const nodesWithPositions: GraphNode[] = exampleData.nodes.map((node, i) => {
-      const angle = (i / exampleData.nodes.length) * Math.PI * 2;
-      const radius = node.type === 'goal' ? 0 : 100 + Math.random() * 80;
-
-      return {
-        id: node.id,
-        label: node.label,
-        type: node.type as GraphNode['type'],
-        description: node.description,
-        date: node.date,
-        url: (node as any).url,
-        x: centerX + Math.cos(angle) * radius,
-        y: centerY + Math.sin(angle) * radius,
-        vx: 0,
-        vy: 0
-      };
-    });
-
-    // Create the data object
-    const dataWithPositions: GraphData = {
-      version: '1.0',
-      meta: exampleData.meta as GraphData['meta'],
-      nodes: nodesWithPositions,
-      edges: exampleData.edges
-    };
-
-    // Load the data
-    loadData(dataWithPositions);
-
-    console.log('=== onMount END ===');
+    console.log('=== Project Store Initialized ===');
   });
 </script>
 
@@ -112,8 +100,10 @@
   <title>NexusMindGraph - {mode === 'builder' ? 'Builder' : 'Traveler'}</title>
 </svelte:head>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="h-screen flex flex-col bg-graph-bg text-graph-text">
-  <Header />
+  <Header bind:this={headerComponent} />
 
   {#if mode === 'traveler'}
     <!-- Traveler Mode: Full-width globe view -->

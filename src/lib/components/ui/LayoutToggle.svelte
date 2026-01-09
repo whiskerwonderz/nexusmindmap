@@ -26,7 +26,7 @@
     type="button"
     class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all {$layoutMode === 'physics' ? 'bg-white/15 text-white' : 'text-graph-muted hover:text-white hover:bg-white/5'}"
     onclick={() => setLayoutMode('physics')}
-    title="Physics-based dynamic layout"
+    title="Constellation layout"
   >
     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="5" cy="6" r="2" />
@@ -42,6 +42,6 @@
       <line x1="16" y1="12" x2="18" y2="15" opacity="0.5" />
       <line x1="11" y1="19" x2="14" y2="14" opacity="0.5" />
     </svg>
-    Physics
+    Constellation
   </button>
 </div>

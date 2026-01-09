@@ -3,6 +3,7 @@
 export * from './common';
 export * from './builder';
 export * from './traveler';
+export * from './project';
 
 // ============================================
 // UNIFIED APP STATE TYPE

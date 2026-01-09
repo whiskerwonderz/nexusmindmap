@@ -1,287 +1,314 @@
 {
   "version": "1.0",
   "meta": {
-    "title": "AI Agent Consultancy Journey",
-    "author": "Crystal",
-    "created": "2024-12-28",
-    "updated": "2024-12-28",
+    "title": "Demo Knowledge Graph",
+    "author": "Demo User",
+    "created": "2024-08-01",
+    "updated": "2025-01-09",
     "theme": "midnight"
   },
   "nodes": [
     {
       "id": "goal",
-      "label": "AI Agent Consultancy",
+      "label": "Master ML & AI",
       "type": "goal",
-      "date": "2024-10-01",
-      "description": "Building expertise to help businesses implement AI automation solutions"
-    },
-    {
-      "id": "n8n",
-      "label": "n8n",
-      "type": "skill",
-      "date": "2024-10-15",
-      "description": "Workflow automation platform for building AI agents"
-    },
-    {
-      "id": "agents",
-      "label": "Agent Architecture",
-      "type": "skill",
-      "date": "2024-11-10",
-      "description": "Designing multi-step AI agent workflows"
-    },
-    {
-      "id": "rag",
-      "label": "RAG Systems",
-      "type": "skill",
-      "date": "2024-11-20",
-      "description": "Retrieval-Augmented Generation for knowledge-powered AI"
+      "date": "2024-08-01",
+      "description": "Become proficient in Machine Learning and AI, specializing in Google Gemini and multimodal AI applications"
     },
     {
       "id": "python",
       "label": "Python",
       "type": "skill",
-      "date": "2024-10-05",
-      "description": "Programming language for AI/ML development"
+      "date": "2024-08-05",
+      "description": "Core programming language for ML/AI development"
     },
     {
-      "id": "prompting",
+      "id": "gemini-api",
+      "label": "Gemini API",
+      "type": "skill",
+      "date": "2024-09-15",
+      "description": "Google's Gemini API for building AI applications"
+    },
+    {
+      "id": "prompt-eng",
       "label": "Prompt Engineering",
       "type": "skill",
-      "date": "2024-10-20",
-      "description": "Crafting effective prompts for LLMs"
+      "date": "2024-09-01",
+      "description": "Crafting effective prompts for large language models"
     },
     {
-      "id": "mcp",
-      "label": "MCP Protocol",
+      "id": "tensorflow",
+      "label": "TensorFlow",
       "type": "skill",
-      "date": "2024-12-18",
-      "description": "Model Context Protocol for AI tool integration"
+      "date": "2024-10-01",
+      "description": "Google's open-source ML framework"
     },
     {
-      "id": "cert-n8n",
-      "label": "n8n Certified",
-      "type": "cert",
-      "date": "2024-12-07",
-      "description": "Official n8n platform certification"
+      "id": "keras",
+      "label": "Keras",
+      "type": "skill",
+      "date": "2024-10-15",
+      "description": "High-level neural network API for TensorFlow"
     },
     {
-      "id": "cert-google",
-      "label": "Google AI Cert",
-      "type": "cert",
-      "date": "2024-12-14",
-      "description": "Google AI Essentials certification"
+      "id": "vertex-ai",
+      "label": "Vertex AI",
+      "type": "skill",
+      "date": "2024-11-01",
+      "description": "Google Cloud's unified ML platform"
     },
     {
-      "id": "cert-python",
-      "label": "Python Certified",
-      "type": "cert",
-      "date": "2024-12-23",
-      "description": "Python programming certification"
+      "id": "embeddings",
+      "label": "Embeddings",
+      "type": "skill",
+      "date": "2024-11-15",
+      "description": "Vector representations for semantic search and RAG"
     },
     {
-      "id": "build-weather",
-      "label": "OpenWeather Agent",
-      "type": "project",
-      "date": "2024-11-30",
-      "description": "First n8n agent - fetches weather data via API"
+      "id": "fine-tuning",
+      "label": "Model Fine-tuning",
+      "type": "skill",
+      "date": "2024-12-01",
+      "description": "Customizing pre-trained models for specific tasks"
     },
     {
-      "id": "build-first",
-      "label": "First Agent",
-      "type": "project",
-      "date": "2024-12-03",
-      "description": "Initial AI agent implementation"
-    },
-    {
-      "id": "build-news",
-      "label": "News Summary",
-      "type": "project",
-      "date": "2024-12-10",
-      "description": "Automated news aggregation and summarization"
-    },
-    {
-      "id": "build-linkedin",
-      "label": "LinkedIn Workflow",
-      "type": "project",
-      "date": "2024-12-10",
-      "description": "Social media content automation"
-    },
-    {
-      "id": "build-events",
-      "label": "Events Summary",
-      "type": "project",
-      "date": "2024-12-12",
-      "description": "Event aggregation and notification system"
-    },
-    {
-      "id": "build-gemini",
-      "label": "Gemini File Search",
-      "type": "project",
-      "date": "2024-12-12",
-      "description": "Document search using Google Gemini"
-    },
-    {
-      "id": "build-rag",
-      "label": "Dynamic RAG",
-      "type": "project",
-      "date": "2024-12-13",
-      "description": "Retrieval system with dynamic knowledge base"
-    },
-    {
-      "id": "build-aurora",
-      "label": "Weather & Aurora App",
-      "type": "project",
+      "id": "multimodal",
+      "label": "Multimodal AI",
+      "type": "skill",
       "date": "2024-12-15",
-      "description": "Weather dashboard with aurora borealis alerts"
+      "description": "Processing text, images, video, and audio together"
+    },
+
+    {
+      "id": "concept-neural",
+      "label": "Neural Networks",
+      "type": "concept",
+      "date": "2024-08-20",
+      "description": "Fundamental architecture of deep learning"
     },
     {
-      "id": "build-sales",
-      "label": "Sales Agent",
-      "type": "project",
-      "date": "2024-12-20",
-      "description": "AI-powered sales qualification agent"
+      "id": "concept-transformer",
+      "label": "Transformers",
+      "type": "concept",
+      "date": "2024-09-10",
+      "description": "Architecture behind modern LLMs like Gemini"
     },
     {
-      "id": "build-proposal",
-      "label": "Proposal Agent",
-      "type": "project",
-      "date": "2024-12-20",
-      "description": "Automated proposal generation system"
+      "id": "concept-attention",
+      "label": "Attention Mechanism",
+      "type": "concept",
+      "date": "2024-09-12",
+      "description": "Key component enabling transformers to process context"
     },
     {
-      "id": "build-onboarding",
-      "label": "Onboarding Agent",
-      "type": "project",
-      "date": "2024-12-20",
-      "description": "Client onboarding workflow automation"
+      "id": "concept-rag",
+      "label": "RAG",
+      "type": "concept",
+      "date": "2024-10-20",
+      "description": "Retrieval-Augmented Generation for knowledge-grounded AI"
     },
     {
-      "id": "build-mcp",
-      "label": "Airbnb MCP",
-      "type": "project",
-      "date": "2024-12-24",
-      "description": "MCP integration for Airbnb search"
+      "id": "concept-agents",
+      "label": "AI Agents",
+      "type": "concept",
+      "date": "2024-11-20",
+      "description": "Autonomous AI systems that use tools and make decisions"
     },
     {
-      "id": "src-nick",
-      "label": "Nick's YT Course",
+      "id": "concept-grounding",
+      "label": "Grounding",
+      "type": "concept",
+      "date": "2024-12-05",
+      "description": "Connecting LLM responses to real-world data sources"
+    },
+
+    {
+      "id": "src-google-ai",
+      "label": "Google AI Studio",
       "type": "source",
-      "date": "2024-10-16",
-      "description": "YouTube course on n8n fundamentals"
+      "date": "2024-08-10",
+      "description": "Free playground for prototyping with Gemini"
     },
     {
-      "id": "src-nate",
-      "label": "Nate's Tutorials",
+      "id": "src-coursera-ml",
+      "label": "ML Specialization",
       "type": "source",
-      "date": "2024-10-25",
-      "description": "Advanced n8n tutorials and patterns"
+      "date": "2024-08-15",
+      "description": "Andrew Ng's Machine Learning course on Coursera"
     },
     {
-      "id": "src-skool",
-      "label": "AI Automation Society",
+      "id": "src-deeplearning",
+      "label": "DeepLearning.AI",
+      "type": "source",
+      "date": "2024-09-05",
+      "description": "Generative AI with LLMs courses"
+    },
+    {
+      "id": "src-gemini-docs",
+      "label": "Gemini Documentation",
+      "type": "source",
+      "date": "2024-09-18",
+      "description": "Official Google Gemini API documentation"
+    },
+    {
+      "id": "src-kaggle",
+      "label": "Kaggle Learn",
+      "type": "source",
+      "date": "2024-10-05",
+      "description": "Hands-on ML tutorials and competitions"
+    },
+    {
+      "id": "src-tf-tutorials",
+      "label": "TensorFlow Tutorials",
+      "type": "source",
+      "date": "2024-10-10",
+      "description": "Official TensorFlow learning resources"
+    },
+    {
+      "id": "src-google-cloud",
+      "label": "Google Cloud Skills",
       "type": "source",
       "date": "2024-11-05",
-      "description": "Community for AI automation practitioners"
+      "description": "Google Cloud training for Vertex AI"
+    },
+
+    {
+      "id": "cert-google-ai",
+      "label": "Google AI Essentials",
+      "type": "cert",
+      "date": "2024-09-25",
+      "description": "Google's foundational AI certification"
     },
     {
-      "id": "src-ztm",
-      "label": "ZTM RAG Course",
-      "type": "source",
-      "date": "2024-11-22",
-      "description": "Zero to Mastery RAG implementation course"
+      "id": "cert-tf-dev",
+      "label": "TensorFlow Developer",
+      "type": "cert",
+      "date": "2024-11-10",
+      "description": "Google TensorFlow Developer Certificate"
     },
     {
-      "id": "src-google",
-      "label": "Google Skills",
-      "type": "source",
-      "date": "2024-10-08",
-      "description": "Google's AI learning platform"
+      "id": "cert-gcp-ml",
+      "label": "GCP ML Engineer",
+      "type": "cert",
+      "date": "2025-01-05",
+      "description": "Google Cloud Professional ML Engineer"
+    },
+
+    {
+      "id": "proj-chatbot",
+      "label": "Gemini Chatbot",
+      "type": "project",
+      "date": "2024-09-20",
+      "description": "Conversational AI chatbot using Gemini Pro"
     },
     {
-      "id": "src-maker",
-      "label": "Maker School",
-      "type": "source",
-      "date": "2024-09-15",
-      "description": "Entrepreneurship and maker education"
+      "id": "proj-image-ai",
+      "label": "Image Analyzer",
+      "type": "project",
+      "date": "2024-10-25",
+      "description": "Multimodal image analysis with Gemini Vision"
     },
     {
-      "id": "concept-webhooks",
-      "label": "Webhooks",
-      "type": "concept",
-      "date": "2024-10-28",
-      "description": "Event-driven API integration pattern"
+      "id": "proj-doc-qa",
+      "label": "Document Q&A",
+      "type": "project",
+      "date": "2024-11-08",
+      "description": "RAG-powered document question answering system"
     },
     {
-      "id": "concept-error",
-      "label": "Error Handling",
-      "type": "concept",
-      "date": "2024-11-02",
-      "description": "Robust error management in workflows"
+      "id": "proj-classifier",
+      "label": "Image Classifier",
+      "type": "project",
+      "date": "2024-10-30",
+      "description": "CNN-based image classification with TensorFlow"
     },
     {
-      "id": "concept-hitl",
-      "label": "Human in Loop",
-      "type": "concept",
-      "date": "2024-11-15",
-      "description": "Human oversight in AI decision-making"
+      "id": "proj-sentiment",
+      "label": "Sentiment Analyzer",
+      "type": "project",
+      "date": "2024-11-25",
+      "description": "Text sentiment analysis using fine-tuned model"
     },
     {
-      "id": "concept-multi",
-      "label": "Multi-Agent",
-      "type": "concept",
-      "date": "2024-12-01",
-      "description": "Coordinating multiple AI agents"
+      "id": "proj-agent",
+      "label": "Research Agent",
+      "type": "project",
+      "date": "2024-12-10",
+      "description": "AI agent that searches and summarizes information"
+    },
+    {
+      "id": "proj-video-ai",
+      "label": "Video Summarizer",
+      "type": "project",
+      "date": "2024-12-20",
+      "description": "Multimodal video analysis and summarization"
+    },
+    {
+      "id": "proj-voice-ai",
+      "label": "Voice Assistant",
+      "type": "project",
+      "date": "2025-01-02",
+      "description": "Speech-to-text AI assistant using Gemini"
     }
   ],
   "edges": [
-    { "id": "e1", "from": "goal", "to": "n8n", "label": "requires" },
-    { "id": "e2", "from": "goal", "to": "agents", "label": "requires" },
-    { "id": "e3", "from": "goal", "to": "rag", "label": "requires" },
-    { "id": "e4", "from": "goal", "to": "python", "label": "requires" },
-    { "id": "e5", "from": "goal", "to": "prompting", "label": "requires" },
-    { "id": "e6", "from": "goal", "to": "mcp", "label": "requires" },
+    { "id": "e1", "from": "goal", "to": "python", "label": "requires" },
+    { "id": "e2", "from": "goal", "to": "gemini-api", "label": "requires" },
+    { "id": "e3", "from": "goal", "to": "prompt-eng", "label": "requires" },
+    { "id": "e4", "from": "goal", "to": "tensorflow", "label": "requires" },
+    { "id": "e5", "from": "goal", "to": "vertex-ai", "label": "requires" },
+    { "id": "e6", "from": "goal", "to": "multimodal", "label": "requires" },
 
-    { "id": "e10", "from": "n8n", "to": "cert-n8n", "label": "achieved" },
-    { "id": "e11", "from": "n8n", "to": "src-nick", "label": "learned from" },
-    { "id": "e12", "from": "n8n", "to": "src-nate", "label": "learned from" },
-    { "id": "e13", "from": "n8n", "to": "build-weather", "label": "built" },
-    { "id": "e14", "from": "n8n", "to": "build-first", "label": "built" },
-    { "id": "e15", "from": "n8n", "to": "build-news", "label": "built" },
-    { "id": "e16", "from": "n8n", "to": "build-linkedin", "label": "built" },
-    { "id": "e17", "from": "n8n", "to": "build-events", "label": "built" },
-    { "id": "e18", "from": "n8n", "to": "concept-webhooks", "label": "uses" },
-    { "id": "e19", "from": "n8n", "to": "concept-error", "label": "uses" },
+    { "id": "e10", "from": "python", "to": "src-kaggle", "label": "learned from" },
+    { "id": "e11", "from": "python", "to": "concept-neural", "label": "enables" },
 
-    { "id": "e20", "from": "agents", "to": "src-skool", "label": "learned from" },
-    { "id": "e21", "from": "agents", "to": "build-sales", "label": "built" },
-    { "id": "e22", "from": "agents", "to": "build-proposal", "label": "built" },
-    { "id": "e23", "from": "agents", "to": "build-onboarding", "label": "built" },
-    { "id": "e24", "from": "agents", "to": "concept-multi", "label": "pattern" },
-    { "id": "e25", "from": "agents", "to": "concept-hitl", "label": "pattern" },
+    { "id": "e20", "from": "gemini-api", "to": "src-google-ai", "label": "learned from" },
+    { "id": "e21", "from": "gemini-api", "to": "src-gemini-docs", "label": "learned from" },
+    { "id": "e22", "from": "gemini-api", "to": "proj-chatbot", "label": "built" },
+    { "id": "e23", "from": "gemini-api", "to": "proj-image-ai", "label": "built" },
+    { "id": "e24", "from": "gemini-api", "to": "concept-transformer", "label": "uses" },
 
-    { "id": "e30", "from": "rag", "to": "src-ztm", "label": "learned from" },
-    { "id": "e31", "from": "rag", "to": "build-rag", "label": "built" },
-    { "id": "e32", "from": "rag", "to": "build-gemini", "label": "built" },
+    { "id": "e30", "from": "prompt-eng", "to": "src-deeplearning", "label": "learned from" },
+    { "id": "e31", "from": "prompt-eng", "to": "cert-google-ai", "label": "achieved" },
+    { "id": "e32", "from": "prompt-eng", "to": "proj-chatbot", "label": "applied in" },
 
-    { "id": "e40", "from": "python", "to": "cert-python", "label": "achieved" },
-    { "id": "e41", "from": "python", "to": "src-google", "label": "learned from" },
+    { "id": "e40", "from": "tensorflow", "to": "src-tf-tutorials", "label": "learned from" },
+    { "id": "e41", "from": "tensorflow", "to": "src-coursera-ml", "label": "learned from" },
+    { "id": "e42", "from": "tensorflow", "to": "keras", "label": "uses" },
+    { "id": "e43", "from": "tensorflow", "to": "cert-tf-dev", "label": "achieved" },
+    { "id": "e44", "from": "tensorflow", "to": "proj-classifier", "label": "built" },
 
-    { "id": "e50", "from": "prompting", "to": "cert-google", "label": "achieved" },
-    { "id": "e51", "from": "prompting", "to": "src-google", "label": "learned from" },
-    { "id": "e52", "from": "prompting", "to": "build-aurora", "label": "built" },
+    { "id": "e50", "from": "keras", "to": "concept-neural", "label": "implements" },
+    { "id": "e51", "from": "keras", "to": "proj-classifier", "label": "used in" },
 
-    { "id": "e60", "from": "mcp", "to": "build-mcp", "label": "built" },
+    { "id": "e60", "from": "vertex-ai", "to": "src-google-cloud", "label": "learned from" },
+    { "id": "e61", "from": "vertex-ai", "to": "cert-gcp-ml", "label": "achieved" },
+    { "id": "e62", "from": "vertex-ai", "to": "proj-doc-qa", "label": "deployed" },
 
-    { "id": "e70", "from": "src-nick", "to": "src-nate", "label": "complements" },
-    { "id": "e71", "from": "src-skool", "to": "build-news", "label": "tutorial" },
-    { "id": "e72", "from": "src-maker", "to": "goal", "label": "foundation" },
+    { "id": "e70", "from": "embeddings", "to": "concept-rag", "label": "enables" },
+    { "id": "e71", "from": "embeddings", "to": "proj-doc-qa", "label": "used in" },
+    { "id": "e72", "from": "embeddings", "to": "src-deeplearning", "label": "learned from" },
 
-    { "id": "e80", "from": "build-sales", "to": "build-proposal", "label": "related" },
-    { "id": "e81", "from": "build-proposal", "to": "build-onboarding", "label": "related" },
-    { "id": "e82", "from": "build-rag", "to": "build-gemini", "label": "related" },
-    { "id": "e83", "from": "build-news", "to": "build-events", "label": "related" },
+    { "id": "e80", "from": "fine-tuning", "to": "proj-sentiment", "label": "built" },
+    { "id": "e81", "from": "fine-tuning", "to": "vertex-ai", "label": "uses" },
 
-    { "id": "e90", "from": "concept-webhooks", "to": "concept-error", "label": "related" },
-    { "id": "e91", "from": "concept-hitl", "to": "concept-multi", "label": "pattern" }
+    { "id": "e90", "from": "multimodal", "to": "proj-image-ai", "label": "built" },
+    { "id": "e91", "from": "multimodal", "to": "proj-video-ai", "label": "built" },
+    { "id": "e92", "from": "multimodal", "to": "proj-voice-ai", "label": "built" },
+    { "id": "e93", "from": "multimodal", "to": "gemini-api", "label": "uses" },
+
+    { "id": "e100", "from": "concept-transformer", "to": "concept-attention", "label": "uses" },
+    { "id": "e101", "from": "concept-neural", "to": "concept-transformer", "label": "foundation" },
+    { "id": "e102", "from": "concept-rag", "to": "concept-grounding", "label": "enables" },
+    { "id": "e103", "from": "concept-agents", "to": "proj-agent", "label": "pattern" },
+    { "id": "e104", "from": "concept-grounding", "to": "proj-agent", "label": "used in" },
+
+    { "id": "e110", "from": "src-coursera-ml", "to": "src-deeplearning", "label": "prereq" },
+    { "id": "e111", "from": "src-google-ai", "to": "src-gemini-docs", "label": "complements" },
+
+    { "id": "e120", "from": "proj-chatbot", "to": "proj-doc-qa", "label": "evolved into" },
+    { "id": "e121", "from": "proj-doc-qa", "to": "proj-agent", "label": "evolved into" },
+    { "id": "e122", "from": "proj-image-ai", "to": "proj-video-ai", "label": "evolved into" },
+    { "id": "e123", "from": "proj-video-ai", "to": "proj-voice-ai", "label": "related" }
   ]
 }

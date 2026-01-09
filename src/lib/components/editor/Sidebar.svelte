@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { nodes, nodesByType, selectNode, selectedNodeId } from '$lib/stores/graph';
+  import { nodes, edges, nodesByType, selectNode, selectedNodeId, loadData, clear } from '$lib/stores/graph';
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
   import { NODE_TYPE_LABELS, NODE_TYPES, type NodeType } from '$lib/types';
+  import { exportNodesToCSV, importNodesFromCSV } from '$lib/utils/dataExport';
+  import { toastStore } from '$lib/stores/toastStore.svelte';
 
   interface Props {
     onAddNode?: () => void;
@@ -19,6 +21,106 @@
     cert: false,
     concept: false
   });
+
+  // File input refs
+  let fileInputRef = $state<HTMLInputElement | null>(null);
+  let aiFileInputRef = $state<HTMLInputElement | null>(null);
+  let isImporting = $state(false);
+
+  // n8n webhook URL for AI import
+  const AI_IMPORT_WEBHOOK = 'https://n8n.nullis.pl/webhook/ai-import-nodes';
+
+  // Export functions
+  function handleExportCSV(): void {
+    exportNodesToCSV($nodes, $edges);
+    toastStore.success('Nodes exported to CSV');
+  }
+
+  // Import trigger
+  function triggerImport(): void {
+    fileInputRef?.click();
+  }
+
+  function triggerAIImport(): void {
+    aiFileInputRef?.click();
+  }
+
+  // Handle CSV file import
+  async function handleFileImport(e: Event): Promise<void> {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    isImporting = true;
+
+    try {
+      const result = await importNodesFromCSV(file);
+
+      // Load the imported data (replaces existing)
+      loadData({
+        version: '1.0',
+        meta: { title: 'Imported Graph' },
+        nodes: result.nodes,
+        edges: result.edges,
+      });
+
+      toastStore.success(`Imported ${result.nodes.length} nodes and ${result.edges.length} connections`);
+    } catch (error) {
+      console.error('Import failed:', error);
+      toastStore.error(error instanceof Error ? error.message : 'Failed to import file');
+    } finally {
+      isImporting = false;
+      target.value = '';
+    }
+  }
+
+  // Handle AI-powered import (sends to n8n webhook)
+  async function handleAIFileImport(e: Event): Promise<void> {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    isImporting = true;
+
+    try {
+      const content = await file.text();
+
+      // Send to n8n webhook for AI processing
+      const response = await fetch(AI_IMPORT_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          content,
+          type: 'builder-nodes',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI import failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.nodes && Array.isArray(result.nodes)) {
+        loadData({
+          version: '1.0',
+          meta: { title: 'AI Imported Graph' },
+          nodes: result.nodes,
+          edges: result.edges || [],
+        });
+        toastStore.success(`AI imported ${result.nodes.length} nodes`);
+      } else {
+        throw new Error('Invalid response from AI import');
+      }
+    } catch (error) {
+      console.error('AI Import failed:', error);
+      toastStore.error(error instanceof Error ? error.message : 'AI import failed');
+    } finally {
+      isImporting = false;
+      target.value = '';
+    }
+  }
 
   // Filter nodes by search query
   const filteredNodesByType = $derived.by(() => {
@@ -177,4 +279,160 @@
       </div>
     {/if}
   </div>
+
+  <!-- Import/Export Section -->
+  <div class="p-4 border-t border-panel">
+    <h3 class="text-xs text-graph-muted uppercase tracking-wide mb-3">Data</h3>
+
+    <!-- Hidden file inputs -->
+    <input
+      type="file"
+      accept=".csv"
+      bind:this={fileInputRef}
+      onchange={handleFileImport}
+      class="hidden"
+    />
+    <input
+      type="file"
+      accept=".csv,.txt,.json"
+      bind:this={aiFileInputRef}
+      onchange={handleAIFileImport}
+      class="hidden"
+    />
+
+    <div class="space-y-2">
+      <!-- Export CSV -->
+      <button
+        type="button"
+        class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
+        onclick={handleExportCSV}
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Export CSV
+      </button>
+
+      <!-- Import CSV with Help Tooltip -->
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
+          class:opacity-50={isImporting}
+          disabled={isImporting}
+          onclick={triggerImport}
+        >
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          {isImporting ? 'Importing...' : 'Import CSV'}
+        </button>
+
+        <!-- Help Tooltip -->
+        <div class="help-tooltip">
+          <button type="button" class="help-btn" title="CSV format help">?</button>
+          <div class="tooltip-content">
+            <strong>Expected CSV Format:</strong>
+            <pre>Label,Type,Description,Date,URL,Connections</pre>
+            <p><strong>Label:</strong> Node name (required)</p>
+            <p><strong>Type:</strong> goal, skill, project, source, cert, concept</p>
+            <p><strong>Description:</strong> Optional description</p>
+            <p><strong>Date:</strong> Optional date (e.g., 2024-01)</p>
+            <p><strong>URL:</strong> Optional link</p>
+            <p><strong>Connections:</strong> Semicolon-separated node labels</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Import -->
+      <button
+        type="button"
+        class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-sm transition-colors"
+        class:opacity-50={isImporting}
+        disabled={isImporting}
+        onclick={triggerAIImport}
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z" />
+          <circle cx="8" cy="14" r="1" />
+          <circle cx="16" cy="14" r="1" />
+        </svg>
+        AI Import (any format)
+      </button>
+    </div>
+  </div>
 </div>
+
+<style>
+  .help-tooltip {
+    position: relative;
+  }
+
+  .help-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .help-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .tooltip-content {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 8px;
+    padding: 12px;
+    background: rgba(30, 30, 30, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.8);
+    width: 280px;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .help-tooltip:hover .tooltip-content {
+    display: block;
+  }
+
+  .tooltip-content strong {
+    color: white;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .tooltip-content pre {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    overflow-x: auto;
+    font-size: 10px;
+  }
+
+  .tooltip-content p {
+    margin: 4px 0;
+  }
+
+  .tooltip-content p strong {
+    display: inline;
+    margin: 0;
+  }
+</style>

@@ -24,13 +24,8 @@
     },
     physics: {
       icon: `<circle cx="5" cy="6" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="8" r="2"/><circle cx="6" cy="14" r="2"/><circle cx="14" cy="12" r="2"/><circle cx="18" cy="17" r="2"/><circle cx="9" cy="19" r="2"/><line x1="7" y1="6" x2="10" y2="5" opacity="0.5"/><line x1="14" y1="5" x2="17" y2="7" opacity="0.5"/><line x1="8" y1="14" x2="12" y2="12" opacity="0.5"/>`,
-      label: 'Physics',
+      label: 'Constellation',
       description: 'Force-directed simulation',
-    },
-    timeline: {
-      icon: `<line x1="4" y1="12" x2="20" y2="12" opacity="0.3"/><circle cx="6" cy="8" r="2" fill="currentColor"/><circle cx="12" cy="8" r="2" fill="currentColor"/><circle cx="18" cy="8" r="2" fill="currentColor"/><circle cx="8" cy="16" r="2" fill="currentColor"/><circle cx="15" cy="16" r="2" fill="currentColor"/><line x1="6" y1="10" x2="6" y2="12" opacity="0.3"/><line x1="12" y1="10" x2="12" y2="12" opacity="0.3"/><line x1="18" y1="10" x2="18" y2="12" opacity="0.3"/>`,
-      label: 'Timeline',
-      description: 'Chronological view',
     },
     cluster: {
       icon: `<circle cx="7" cy="7" r="6" fill="none" stroke-dasharray="2 2" opacity="0.5"/><circle cx="17" cy="9" r="5" fill="none" stroke-dasharray="2 2" opacity="0.5"/><circle cx="12" cy="17" r="4" fill="none" stroke-dasharray="2 2" opacity="0.5"/><circle cx="5" cy="6" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="7" cy="5" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="18" cy="10" r="1.5" fill="currentColor"/><circle cx="12" cy="17" r="1.5" fill="currentColor"/>`,
@@ -53,10 +48,15 @@
       label: 'Map',
       description: '2D map projection',
     },
+    timeline: {
+      icon: `<line x1="12" y1="3" x2="12" y2="21" opacity="0.3"/><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/><line x1="14" y1="5" x2="18" y2="5" opacity="0.5"/><line x1="14" y1="12" x2="18" y2="12" opacity="0.5"/><line x1="14" y1="19" x2="18" y2="19" opacity="0.5"/>`,
+      label: 'Timeline',
+      description: 'Cinematic journey view',
+    },
   };
 
   // Get layouts based on mode
-  const builderLayouts = ['radial', 'physics', 'timeline', 'cluster', 'hierarchical'] as const;
+  const builderLayouts = ['radial', 'physics', 'cluster', 'hierarchical'] as const;
   const travelerLayouts = ['globe', 'map', 'timeline'] as const;
 
   const availableLayouts = $derived(mode === 'builder' ? builderLayouts : travelerLayouts);
