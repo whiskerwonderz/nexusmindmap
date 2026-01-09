@@ -232,7 +232,8 @@
     min-height: 300px;
     position: relative;
     background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
-    /* Removed border-radius from container with canvas - causes WebGL issues in Firefox */
+    border-radius: 12px;
+    overflow: hidden;
     touch-action: pan-x pan-y;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
