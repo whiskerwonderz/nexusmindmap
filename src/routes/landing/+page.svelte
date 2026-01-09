@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
 
   let mouseX = $state(0.5);
   let mouseY = $state(0.5);
@@ -34,7 +35,7 @@
   ];
 
   function enterApp() {
-    goto('/');
+    goto(base + '/');
   }
 
   function handleMouseMove(e: MouseEvent) {
@@ -106,7 +107,7 @@
     <!-- Logo with ambient animation -->
     <div class="logo">
       <div class="logo-frame">
-        <img src="/logo.png" alt="NexusMindMap" />
+        <img src="{base}/logo.png" alt="NexusMindMap" />
         <div class="logo-glow"></div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import { nodes, edges } from '$lib/stores/graph';
   import ThemeSwitcher from './ui/ThemeSwitcher.svelte';
   import ModeSwitcher from './ui/ModeSwitcher.svelte';
@@ -26,8 +27,8 @@
 <header class="h-14 px-6 flex items-center justify-between border-b border-panel">
   <div class="flex items-center gap-4">
     <!-- Logo -->
-    <a href="/landing" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-      <img src="/logo.png" alt="NexusMindMap" class="w-8 h-8 rounded-lg object-cover" />
+    <a href="{base}/landing" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <img src="{base}/logo.png" alt="NexusMindMap" class="w-8 h-8 rounded-lg object-cover" />
       <span class="logo-text">NexusMindMap</span>
     </a>
 
