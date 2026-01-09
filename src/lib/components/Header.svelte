@@ -26,10 +26,15 @@
 <header class="h-14 px-6 flex items-center justify-between border-b border-panel">
   <div class="flex items-center gap-4">
     <!-- Logo -->
-    <a href="/landing" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-      <img src="/logo.png" alt="NexusMindMap" class="w-8 h-8 rounded-lg object-cover" />
-      <span class="logo-text">NexusMindMap</span>
-    </a>
+    <div class="flex items-center gap-2">
+      <a href="/landing" class="hover:opacity-80 transition-opacity">
+        <img src="/logo.png" alt="NexusMindMap" class="w-8 h-8 rounded-lg object-cover" />
+      </a>
+      <div class="flex flex-col">
+        <a href="/landing" class="logo-text hover:opacity-80 transition-opacity">NexusMindMap</a>
+        <a href="https://whiskerwonderz.github.io/whisker_wonderz/" target="_blank" rel="noopener noreferrer" class="text-xs italic text-graph-muted hover:text-white transition-colors">by WhiskerWonderz</a>
+      </div>
+    </div>
 
     <!-- Project Name & Actions -->
     <div class="project-section">
