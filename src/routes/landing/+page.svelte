@@ -1,9 +1,18 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
+  import { page } from '$app/stores';
+  import { onMount } from 'svelte';
 
   let mouseX = $state(0.5);
   let mouseY = $state(0.5);
+  let isMobile = $state(false);
+
+  onMount(() => {
+    // Check if redirected from main app due to mobile
+    const urlParams = new URLSearchParams(window.location.search);
+    isMobile = urlParams.get('mobile') === 'true';
+  });
 
   // Generate stars with natural celestial drift
   const stars = Array.from({ length: 200 }, (_, i) => ({
@@ -118,13 +127,25 @@
       <h1>Your constellation is already taking shape.</h1>
     </div>
 
-    <!-- CTA -->
-    <button class="cta" onclick={enterApp}>
-      <span class="cta-text">Map yours</span>
-      <svg class="cta-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M5 12h14M12 5l7 7-7 7" />
-      </svg>
-    </button>
+    <!-- CTA or Mobile Message -->
+    {#if isMobile}
+      <div class="mobile-notice">
+        <svg class="mobile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+          <line x1="12" y1="18" x2="12.01" y2="18" />
+        </svg>
+        <p class="mobile-title">Desktop Only (Beta)</p>
+        <p class="mobile-text">NexusMindMap is optimized for desktop browsers during beta.</p>
+        <p class="mobile-text">Please visit on a laptop or desktop computer.</p>
+      </div>
+    {:else}
+      <button class="cta" onclick={enterApp}>
+        <span class="cta-text">Map yours</span>
+        <svg class="cta-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
+      </button>
+    {/if}
 
     <!-- Brand signature -->
     <div class="brand">
@@ -322,6 +343,40 @@
   .cta:hover .cta-arrow {
     opacity: 1;
     transform: translateX(4px);
+  }
+
+  /* Mobile notice */
+  .mobile-notice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px 32px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    text-align: center;
+  }
+
+  .mobile-icon {
+    width: 40px;
+    height: 40px;
+    color: rgba(251, 191, 36, 0.8);
+  }
+
+  .mobile-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: rgba(251, 191, 36, 0.9);
+    margin: 0;
+  }
+
+  .mobile-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+    line-height: 1.5;
   }
 
   /* Brand signature */

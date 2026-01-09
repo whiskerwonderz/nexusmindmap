@@ -36,6 +36,7 @@
     <a href="{base}/landing" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
       <img src="{base}/logo.png" alt="NexusMindMap" class="w-8 h-8 rounded-lg object-cover" />
       <span class="logo-text">NexusMindMap</span>
+      <span class="beta-badge">Beta</span>
     </a>
 
     <!-- Project Name & Actions -->
@@ -94,6 +95,19 @@
       {/if}
     </div>
 
+    <!-- Bug Report -->
+    <a
+      href="mailto:whiskerwonderz001@gmail.com?subject=NexusMindMap Bug Report&body=Please describe the bug:%0A%0ABrowser:%0ASteps to reproduce:%0A"
+      class="feedback-btn"
+      title="Report a bug"
+    >
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
+      </svg>
+      <span>Feedback</span>
+    </a>
+
     <!-- Theme Switcher -->
     <ThemeSwitcher />
   </div>
@@ -117,6 +131,39 @@
     font-size: 1.25rem;
     font-weight: 500;
     letter-spacing: 0.02em;
+  }
+
+  .beta-badge {
+    padding: 2px 8px;
+    background: rgba(251, 191, 36, 0.15);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgb(251, 191, 36);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .feedback-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .feedback-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   .project-section {

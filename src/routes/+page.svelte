@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
   import Header from '$lib/components/Header.svelte';
   import Sidebar from '$lib/components/editor/Sidebar.svelte';
   import Inspector from '$lib/components/editor/Inspector.svelte';
@@ -17,6 +19,12 @@
 
   // Import example data for demo
   import exampleData from '$lib/data/example.json';
+
+  // Mobile detection and redirect
+  function isMobileDevice(): boolean {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
 
   // Mode state
   const mode = $derived(appStore.mode);
@@ -87,6 +95,12 @@
   }
 
   onMount(() => {
+    // Redirect mobile users to landing page
+    if (isMobileDevice()) {
+      goto(base + '/landing?mobile=true');
+      return;
+    }
+
     // Initialize the project store (creates default projects if none exist)
     projectStore.initialize();
   });
