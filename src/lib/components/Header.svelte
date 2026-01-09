@@ -1,11 +1,9 @@
 <script lang="ts">
   import { base } from '$app/paths';
-  import { nodes, edges } from '$lib/stores/graph';
   import ThemeSwitcher from './ui/ThemeSwitcher.svelte';
   import ModeSwitcher from './ui/ModeSwitcher.svelte';
   import ProjectManager from './ui/ProjectManager.svelte';
   import { appStore } from '$lib/stores/appStore.svelte';
-  import { travelerStore } from '$lib/stores/travelerStore.svelte';
   import { projectStore } from '$lib/stores/projectStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
 
@@ -84,28 +82,16 @@
   </div>
 
   <div class="flex items-center gap-4">
-    <!-- Stats -->
-    <div class="flex items-center gap-4 text-xs text-graph-muted">
-      {#if appStore.mode === 'builder'}
-        <span>{$nodes.length} nodes</span>
-        <span>{$edges.length} connections</span>
-      {:else}
-        <span>{travelerStore.stats.totalTrips} trips</span>
-        <span>{travelerStore.stats.uniqueCountries} countries</span>
-      {/if}
-    </div>
-
     <!-- Bug Report -->
     <a
       href="mailto:whiskerwonderz001@gmail.com?subject=NexusMindMap Bug Report&body=Please describe the bug:%0A%0ABrowser:%0ASteps to reproduce:%0A"
       class="feedback-btn"
-      title="Report a bug"
+      title="Send feedback"
     >
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
         <polyline points="22,6 12,13 2,6" />
       </svg>
-      <span>Feedback</span>
     </a>
 
     <!-- Theme Switcher -->
@@ -148,13 +134,13 @@
   .feedback-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 12px;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.5);
     text-decoration: none;
     cursor: pointer;
     transition: all 0.2s;
@@ -163,7 +149,6 @@
   .feedback-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.9);
-    border-color: rgba(255, 255, 255, 0.2);
   }
 
   .project-section {
