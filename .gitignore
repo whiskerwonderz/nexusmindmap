@@ -24,3 +24,10 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Test output
+playwright-report/
+test-results/
+
+# n8n workflows (contains API keys)
+n8n-workflows/
