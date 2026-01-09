@@ -229,14 +229,20 @@
   .globe-container {
     width: 100%;
     height: 100%;
-    min-height: 400px;
+    min-height: 300px;
     position: relative;
     background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
-    border-radius: 12px;
-    overflow: hidden;
+    /* Removed border-radius from container with canvas - causes WebGL issues in Firefox */
+    touch-action: pan-x pan-y;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
-  .globe-container :global(canvas) { outline: none; }
+  .globe-container :global(canvas) {
+    outline: none;
+    touch-action: none; /* Let globe.gl handle touch */
+  }
 
   .globe-loading {
     position: absolute;
@@ -256,8 +262,10 @@
     border: 3px solid rgba(255, 255, 255, 0.1);
     border-top-color: #00d4ff;
     border-radius: 50%;
+    -webkit-animation: spin 1s linear infinite;
     animation: spin 1s linear infinite;
   }
 
+  @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>

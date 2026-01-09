@@ -308,8 +308,17 @@
     background: rgba(15, 15, 25, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     z-index: 10;
+  }
+
+  /* Firefox fallback for backdrop-filter */
+  @supports not (backdrop-filter: blur(12px)) {
+    .location-info,
+    .trip-details {
+      background: rgba(15, 15, 25, 0.98);
+    }
   }
 
   .location-info h3,
@@ -405,15 +414,63 @@
     flex-direction: column;
   }
 
+  /* Tablet breakpoint */
+  @media (max-width: 1024px) {
+    .traveler-view {
+      grid-template-columns: 1fr 280px;
+      gap: 1rem;
+      padding: 0.75rem;
+    }
+  }
+
+  /* Mobile breakpoint */
   @media (max-width: 768px) {
     .traveler-view {
       grid-template-columns: 1fr;
-      grid-template-rows: 1fr auto;
+      grid-template-rows: minmax(300px, 1fr) auto;
+      gap: 0.75rem;
+      padding: 0.5rem;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .main-content {
+      min-height: 300px;
+    }
+
+    .viz-area {
+      min-height: 250px;
+      border-radius: 12px;
     }
 
     .sidebar {
       padding-bottom: 1rem;
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+
+    .location-info,
+    .trip-details {
+      left: 0.75rem;
+      bottom: 0.75rem;
+      max-width: calc(100% - 1.5rem);
+      padding: 0.75rem 1rem;
+    }
+  }
+
+  /* Small mobile */
+  @media (max-width: 480px) {
+    .traveler-view {
+      padding: 0.25rem;
+    }
+
+    .layout-btn {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .layout-label {
+      display: none;
     }
   }
 </style>

@@ -141,7 +141,13 @@ body > div[style*="display: contents"],
   background-color: var(--color-concept);
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling - Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Scrollbar styling - WebKit (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -158,4 +164,19 @@ body > div[style*="display: contents"],
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Backdrop filter fallback for Firefox */
+@supports not (backdrop-filter: blur(8px)) {
+  .backdrop-blur-fallback {
+    background: rgba(0, 0, 0, 0.85) !important;
+  }
+}
+
+/* Mobile touch improvements */
+@media (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
