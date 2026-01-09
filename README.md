@@ -1,6 +1,6 @@
 # NexusMindMap
 
-A visual tool for mapping your knowledge, skills, and journeys as interconnected constellations.
+A visual tool for mapping your knowledge, skills, learnings and journeys as interconnected constellations.
 
 ## Features
 
@@ -9,7 +9,7 @@ Build and visualize your knowledge, skills, and ideas as an interconnected graph
 
 **Graph Visualization**
 - Interactive node-based canvas
-- Multiple layout algorithms: Force, Radial, Hierarchy, Constellation
+- Multiple layout algorithms: Radial, Constellation. Cluster, Hierarchy
 - Drag-and-drop node positioning
 - Zoom and pan navigation
 
@@ -20,8 +20,8 @@ Build and visualize your knowledge, skills, and ideas as an interconnected graph
 - Search and filter by tags
 
 **Data**
-- Import/Export JSON format
-- Project management (save, load, duplicate)
+- Import CSV; Export CSV / HTML format
+- Project management (save, load, duplicate locally)
 - Demo project included
 
 ### Explorer Mode
@@ -38,11 +38,6 @@ Map your travels and adventures across the world.
 - Glowing route lines connecting destinations
 - Multiple map styles: Dark Matter, Light, Voyager
 
-**Timeline View**
-- Cinematic vertical timeline of your journeys
-- Chronological visualization with trip cards
-- Visual connection lines between events
-
 **Trip Management**
 - Add, edit, and delete trips
 - Multi-stop journey support
@@ -51,8 +46,7 @@ Map your travels and adventures across the world.
 - Search and sort trips (by date, duration, name)
 
 **Data**
-- Import/Export JSON and CSV formats
-- Export map as image
+- Import CSV; Export CSV / HTML format
 - Statistics: total trips, countries visited, cities explored
 
 ## Tech Stack
@@ -63,23 +57,6 @@ Map your travels and adventures across the world.
 - **2D Map**: MapLibre GL
 - **Graph Layout**: D3.js
 - **Storage**: Browser localStorage (no backend required)
-
-## Getting Started
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-```
-
-## Deployment
-
-This is a static site that can be deployed to GitHub Pages, Vercel, Netlify, or any static hosting.
 
 ## License
 
