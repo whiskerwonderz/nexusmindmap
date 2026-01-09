@@ -21,6 +21,7 @@
   let isReady = $state(false);
   let isLoading = $state(true);
   let webglError = $state<string | null>(null);
+  let initAttempted = false;
 
   function checkWebGLSupport(): boolean {
     try {
@@ -46,8 +47,22 @@
   });
 
   async function initGlobe(): Promise<void> {
+    // Prevent multiple initialization attempts
+    if (initAttempted) {
+      return;
+    }
+    initAttempted = true;
+
     // Check WebGL support first
     if (!checkWebGLSupport()) {
+      isLoading = false;
+      return;
+    }
+
+    // Detect Firefox - known compatibility issues with globe.gl
+    const isFirefox = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('firefox');
+    if (isFirefox) {
+      webglError = 'Firefox has limited support for the 3D globe. Please use the 2D Map view for the best experience.';
       isLoading = false;
       return;
     }
@@ -289,6 +304,8 @@
     gap: 1rem;
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.875rem;
+    z-index: 100;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
   }
 
   .globe-error {
