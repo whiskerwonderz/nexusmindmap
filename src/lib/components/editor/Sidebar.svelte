@@ -4,7 +4,7 @@
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
   import { NODE_TYPES, type NodeType } from '$lib/types';
-  import { exportNodesToCSV, importNodesFromCSV, exportShareableGraph } from '$lib/utils/dataExport';
+  import { exportNodesToCSV, importNodesFromCSV, exportShareableGraph, downloadBuilderNodesTemplate, downloadBuilderEdgesTemplate } from '$lib/utils/dataExport';
   import { projectStore } from '$lib/stores/projectStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
 
@@ -236,7 +236,7 @@
 
   <!-- Import/Export Section -->
   <div class="p-4 border-t border-panel">
-    <h3 class="text-xs text-graph-muted uppercase tracking-wide mb-3">Export</h3>
+    <h3 class="text-xs text-graph-muted uppercase tracking-wide mb-3">Data</h3>
 
     <!-- Hidden file inputs -->
     <input
@@ -248,9 +248,9 @@
     />
 
     <div class="space-y-3">
-      <!-- DATA section -->
+      <!-- EXPORT section -->
       <div class="export-category">
-        <span class="category-label">DATA</span>
+        <span class="category-label">EXPORT</span>
         <div class="space-y-2">
           <button
             type="button"
@@ -265,59 +265,82 @@
             </svg>
             Export CSV
           </button>
+          <button
+            type="button"
+            class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg export-graph-btn text-sm transition-colors"
+            onclick={handleExportGraph}
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="5" r="3"/>
+              <circle cx="5" cy="19" r="3"/>
+              <circle cx="19" cy="19" r="3"/>
+              <line x1="12" y1="8" x2="5" y2="16"/>
+              <line x1="12" y1="8" x2="19" y2="16"/>
+            </svg>
+            Export Graph (HTML)
+          </button>
+        </div>
+      </div>
 
-          <!-- Import CSV with Help Tooltip -->
-          <div class="flex gap-2">
+      <!-- IMPORT section with 2-step flow -->
+      <div class="export-category">
+        <span class="category-label">IMPORT</span>
+        <div class="space-y-2">
+          <!-- Step 1: Download Templates -->
+          <div class="import-step">
+            <span class="step-number">1</span>
+            <span class="step-label">Get template</span>
+            <div class="template-buttons">
+              <button
+                type="button"
+                class="template-btn"
+                onclick={downloadBuilderNodesTemplate}
+                title="Download CSV template"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Nodes
+              </button>
+              <button
+                type="button"
+                class="template-btn"
+                onclick={downloadBuilderEdgesTemplate}
+                title="Download CSV template"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Edges
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: Upload CSV -->
+          <div class="import-step">
+            <span class="step-number">2</span>
+            <span class="step-label">Upload CSV</span>
             <button
               type="button"
-              class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
+              class="import-btn"
               class:opacity-50={isImporting}
               disabled={isImporting}
               onclick={triggerImport}
+              title="Use CSV template for correct format"
             >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              {isImporting ? 'Importing...' : 'Import CSV'}
+              {isImporting ? 'Importing...' : 'Import'}
             </button>
-
-            <!-- Help Tooltip -->
-            <div class="help-tooltip">
-              <button type="button" class="help-btn" title="CSV format help">?</button>
-              <div class="tooltip-content">
-                <strong>Expected CSV Format:</strong>
-                <pre>Label,Type,Description,Date,URL,Connections</pre>
-                <p><strong>Label:</strong> Node name (required)</p>
-                <p><strong>Type:</strong> goal, skill, project, source, cert, concept</p>
-                <p><strong>Description:</strong> Optional description</p>
-                <p><strong>Date:</strong> Optional date (e.g., 2024-01)</p>
-                <p><strong>URL:</strong> Optional link</p>
-                <p><strong>Connections:</strong> Semicolon-separated node labels</p>
-              </div>
-            </div>
           </div>
         </div>
-      </div>
-
-      <!-- VISUAL section -->
-      <div class="export-category">
-        <span class="category-label">VISUAL</span>
-        <button
-          type="button"
-          class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg export-graph-btn text-sm transition-colors"
-          onclick={handleExportGraph}
-        >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="5" r="3"/>
-            <circle cx="5" cy="19" r="3"/>
-            <circle cx="19" cy="19" r="3"/>
-            <line x1="12" y1="8" x2="5" y2="16"/>
-            <line x1="12" y1="8" x2="19" y2="16"/>
-          </svg>
-          Export Graph
-        </button>
       </div>
     </div>
   </div>
@@ -419,5 +442,81 @@
   .export-graph-btn:hover {
     background: rgba(147, 51, 234, 0.2);
     color: rgb(216, 180, 254);
+  }
+
+  /* Import 2-step flow styles */
+  .import-step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+  }
+
+  .step-number {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(0, 212, 255, 0.15);
+    color: #00d4ff;
+    font-size: 0.625rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    flex: 1;
+  }
+
+  .template-buttons {
+    display: flex;
+    gap: 0.375rem;
+  }
+
+  .template-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 6px;
+    color: #22c55e;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .template-btn:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
+  }
+
+  .import-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.625rem;
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: 6px;
+    color: #00d4ff;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .import-btn:hover {
+    background: rgba(0, 212, 255, 0.2);
+    border-color: rgba(0, 212, 255, 0.4);
+  }
+
+  .import-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>

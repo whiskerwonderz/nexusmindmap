@@ -2,7 +2,7 @@
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
   import type { ArcColorScheme, DisplayMode } from '$lib/types/traveler';
-  import { exportTripsToJSON, exportTripsToCSV, importFromJSON, importFromCSV, validateImportedTrips } from '$lib/utils/dataExport';
+  import { exportTripsToJSON, exportTripsToCSV, importFromJSON, importFromCSV, validateImportedTrips, downloadTravelerTripsTemplate } from '$lib/utils/dataExport';
 
   interface Props {
     onResetView?: () => void;
@@ -239,13 +239,23 @@
         </svg>
         Export CSV
       </button>
-      <button type="button" class="data-btn import" onclick={triggerImport} disabled={isImporting}>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    </div>
+    <div class="import-row">
+      <button type="button" class="template-btn" onclick={downloadTravelerTripsTemplate} title="Download CSV template">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Template
+      </button>
+      <button type="button" class="data-btn import" onclick={triggerImport} disabled={isImporting} title="Use CSV template for correct format">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        {isImporting ? 'Importing...' : 'Import CSV'}
+        {isImporting ? 'Importing...' : 'Import'}
       </button>
     </div>
     <input
@@ -436,6 +446,32 @@
 
   .data-btn.import:hover:not(:disabled) {
     background: rgba(0, 212, 255, 0.2);
+  }
+
+  .import-row {
+    display: flex;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+  }
+
+  .template-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 6px;
+    color: #22c55e;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .template-btn:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
   }
 
   .hidden-input {

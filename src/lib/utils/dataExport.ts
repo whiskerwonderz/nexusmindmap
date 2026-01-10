@@ -35,6 +35,55 @@ function downloadFile(content: string, filename: string, mimeType: string): void
   URL.revokeObjectURL(url);
 }
 
+// ============================================
+// CSV TEMPLATE DOWNLOADS
+// ============================================
+
+/**
+ * Download CSV template for Builder mode nodes
+ */
+export function downloadBuilderNodesTemplate(): void {
+  const template = `id,type,label,description,date,url,tags
+node-1,goal,Learn TypeScript,Master TypeScript for web development,2024-01,https://typescriptlang.org,"programming,typescript"
+node-2,skill,JavaScript,Frontend scripting language,2023-06,,web
+node-3,project,Portfolio Website,Personal portfolio built with SvelteKit,2024-03,https://myportfolio.com,
+node-4,resource,TypeScript Handbook,Official TypeScript documentation,2024-01,https://typescriptlang.org/docs,docs
+node-5,concept,Type Safety,Compile-time type checking,,,programming
+node-6,note,Meeting Notes,Notes from weekly standup,2024-03-15,,`;
+
+  downloadFile(template, 'nexusmind-nodes-template.csv', 'text/csv');
+}
+
+/**
+ * Download CSV template for Builder mode edges/connections
+ */
+export function downloadBuilderEdgesTemplate(): void {
+  const template = `source,target,type,label
+node-1,node-2,requires,prerequisite
+node-2,node-3,enables,builds on
+node-4,node-1,teaches,learning resource
+node-5,node-2,related,related concept`;
+
+  downloadFile(template, 'nexusmind-edges-template.csv', 'text/csv');
+}
+
+/**
+ * Download CSV template for Traveler mode trips
+ * Note: Multiple rows with same label create multi-stop trips
+ */
+export function downloadTravelerTripsTemplate(): void {
+  const template = `label,startDate,endDate,category,city,country,countryCode,lat,lng,description
+Summer Europe Trip,2024-06-15,2024-06-30,leisure,Paris,France,FR,48.8566,2.3522,Two week adventure through Europe
+Summer Europe Trip,2024-06-15,2024-06-30,leisure,Rome,Italy,IT,41.9028,12.4964,Two week adventure through Europe
+Summer Europe Trip,2024-06-15,2024-06-30,leisure,Barcelona,Spain,ES,41.3851,2.1734,Two week adventure through Europe
+Business Conference,2024-08-10,2024-08-12,business,San Francisco,United States,US,37.7749,-122.4194,Annual tech conference
+Tokyo Adventure,2024-09-01,2024-09-14,adventure,Tokyo,Japan,JP,35.6762,139.6503,Exploring Japanese culture
+Family Reunion,2024-07-20,2024-07-25,family,Denver,United States,US,39.7392,-104.9903,Annual family gathering
+Digital Nomad Month,2024-10-01,2024-10-31,nomad,Lisbon,Portugal,PT,38.7223,-9.1393,Working remotely from Portugal`;
+
+  downloadFile(template, 'nexusmind-trips-template.csv', 'text/csv');
+}
+
 /**
  * Export trips to JSON file
  */
