@@ -2,7 +2,7 @@
   import { travelerStore } from '$lib/stores/travelerStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
   import type { GlobeStyle, DisplayMode } from '$lib/types/traveler';
-  import { exportTripsToJSON, exportTripsToCSV, exportShareableMap, downloadTravelerTripsTemplate, importFromCSV } from '$lib/utils/dataExport';
+  import { exportTripsToJSON, exportTripsToCSV, exportShareableMap } from '$lib/utils/dataExport';
   import { projectStore } from '$lib/stores/projectStore.svelte';
 
   interface Props {
@@ -14,7 +14,6 @@
   let { onResetView, onFocusHome, class: className = '' }: Props = $props();
 
   let isExporting = $state(false);
-  let fileInput: HTMLInputElement;
 
   // Use direct getters for reactive individual settings
   const autoRotate = $derived(travelerStore.autoRotate);
@@ -72,22 +71,6 @@
       toastStore.error('Failed to export shareable map');
     } finally {
       isExporting = false;
-    }
-  }
-
-  async function handleImportCSV(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    try {
-      const trips = await importFromCSV(file);
-      trips.forEach(trip => travelerStore.addTrip(trip));
-      toastStore.success(`Imported ${trips.length} trips`);
-    } catch (err) {
-      toastStore.error(err instanceof Error ? err.message : 'Failed to import trips');
-    } finally {
-      input.value = '';
     }
   }
 </script>
@@ -234,35 +217,6 @@
           Export Map
         </button>
       </div>
-    </div>
-  </div>
-
-  <div class="control-section">
-    <h4 class="section-title">Import</h4>
-    <input
-      type="file"
-      accept=".csv"
-      bind:this={fileInput}
-      onchange={handleImportCSV}
-      style="display: none"
-    />
-    <div class="import-row">
-      <button type="button" class="template-btn" onclick={downloadTravelerTripsTemplate} title="Download CSV template">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Template
-      </button>
-      <button type="button" class="import-btn" onclick={() => fileInput.click()} title="Use CSV template for correct format">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-        Import
-      </button>
     </div>
   </div>
 </div>
@@ -468,49 +422,4 @@
     color: rgba(255, 255, 255, 0.35);
     margin-bottom: 0.375rem;
   }
-
-  /* Import section */
-  .import-row {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .template-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid rgba(34, 197, 94, 0.25);
-    border-radius: 6px;
-    color: #22c55e;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .template-btn:hover {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.4);
-  }
-
-  .import-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    background: rgba(0, 212, 255, 0.1);
-    border: 1px solid rgba(0, 212, 255, 0.25);
-    border-radius: 6px;
-    color: #00d4ff;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .import-btn:hover {
-    background: rgba(0, 212, 255, 0.2);
-    border-color: rgba(0, 212, 255, 0.4);
-  }
-
-  </style>
+</style>

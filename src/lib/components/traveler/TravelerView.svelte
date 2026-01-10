@@ -180,6 +180,15 @@
 
   <!-- Sidebar -->
   <aside class="sidebar">
+    {#if showTripList}
+      <TripList
+        onTripSelect={handleTripSelect}
+        onAddTrip={openAddTripModal}
+        onEditTrip={openEditTripModal}
+        class="trip-list-container"
+      />
+    {/if}
+
     {#if layout === 'globe'}
       <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
     {:else}
@@ -187,15 +196,6 @@
         onResetView={handleResetView}
         onFocusHome={handleFocusHome}
         onStyleChange={handleMapStyleChange}
-      />
-    {/if}
-
-{#if showTripList}
-      <TripList
-        onTripSelect={handleTripSelect}
-        onAddTrip={openAddTripModal}
-        onEditTrip={openEditTripModal}
-        class="trip-list-container"
       />
     {/if}
   </aside>
@@ -292,7 +292,7 @@
     min-height: 0;
   }
 
-  .sidebar > :global(:first-child) {
+  .sidebar > :global(:last-child) {
     flex-shrink: 0;
     max-height: 50%;
     overflow-y: auto;

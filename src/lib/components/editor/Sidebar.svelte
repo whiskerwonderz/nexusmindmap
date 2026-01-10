@@ -4,7 +4,7 @@
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
   import { NODE_TYPES, type NodeType } from '$lib/types';
-  import { exportNodesToCSV, importNodesFromCSV, exportShareableGraph, downloadBuilderNodesTemplate, downloadBuilderEdgesTemplate } from '$lib/utils/dataExport';
+  import { exportNodesToCSV, importNodesFromCSV, exportShareableGraph, downloadBuilderNodesTemplate } from '$lib/utils/dataExport';
   import { projectStore } from '$lib/stores/projectStore.svelte';
   import { toastStore } from '$lib/stores/toastStore.svelte';
 
@@ -236,9 +236,7 @@
 
   <!-- Import/Export Section -->
   <div class="p-4 border-t border-panel">
-    <h3 class="text-xs text-graph-muted uppercase tracking-wide mb-3">Data</h3>
-
-    <!-- Hidden file inputs -->
+    <!-- Hidden file input -->
     <input
       type="file"
       accept=".csv"
@@ -247,14 +245,17 @@
       class="hidden"
     />
 
-    <div class="space-y-3">
+    <div class="space-y-4">
       <!-- EXPORT section -->
-      <div class="export-category">
-        <span class="category-label">EXPORT</span>
-        <div class="space-y-2">
+      <div class="export-section">
+        <h3 class="section-title">Export</h3>
+
+        <!-- DATA -->
+        <div class="export-category">
+          <span class="category-label">DATA</span>
           <button
             type="button"
-            class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors"
+            class="data-btn"
             onclick={handleExportCSV}
           >
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -263,11 +264,16 @@
               <line x1="16" y1="13" x2="8" y2="13"/>
               <line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
-            Export CSV
+            CSV
           </button>
+        </div>
+
+        <!-- VISUAL -->
+        <div class="export-category">
+          <span class="category-label">VISUAL</span>
           <button
             type="button"
-            class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg export-graph-btn text-sm transition-colors"
+            class="data-btn visual"
             onclick={handleExportGraph}
           >
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -277,69 +283,43 @@
               <line x1="12" y1="8" x2="5" y2="16"/>
               <line x1="12" y1="8" x2="19" y2="16"/>
             </svg>
-            Export Graph (HTML)
+            Export Graph
           </button>
         </div>
       </div>
 
-      <!-- IMPORT section with 2-step flow -->
-      <div class="export-category">
-        <span class="category-label">IMPORT</span>
-        <div class="space-y-2">
-          <!-- Step 1: Download Templates -->
-          <div class="import-step">
-            <span class="step-number">1</span>
-            <span class="step-label">Get template</span>
-            <div class="template-buttons">
-              <button
-                type="button"
-                class="template-btn"
-                onclick={downloadBuilderNodesTemplate}
-                title="Download CSV template"
-              >
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Nodes
-              </button>
-              <button
-                type="button"
-                class="template-btn"
-                onclick={downloadBuilderEdgesTemplate}
-                title="Download CSV template"
-              >
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Edges
-              </button>
-            </div>
-          </div>
-
-          <!-- Step 2: Upload CSV -->
-          <div class="import-step">
-            <span class="step-number">2</span>
-            <span class="step-label">Upload CSV</span>
-            <button
-              type="button"
-              class="import-btn"
-              class:opacity-50={isImporting}
-              disabled={isImporting}
-              onclick={triggerImport}
-              title="Use CSV template for correct format"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              {isImporting ? 'Importing...' : 'Import'}
-            </button>
-          </div>
+      <!-- IMPORT section -->
+      <div class="import-section">
+        <h3 class="section-title">Import</h3>
+        <div class="import-buttons">
+          <button
+            type="button"
+            class="template-btn"
+            onclick={downloadBuilderNodesTemplate}
+            title="Download CSV Template"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Template
+          </button>
+          <button
+            type="button"
+            class="import-btn"
+            class:opacity-50={isImporting}
+            disabled={isImporting}
+            onclick={triggerImport}
+            title="Upload CSV"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            {isImporting ? 'Uploading...' : 'Upload'}
+          </button>
         </div>
       </div>
     </div>
@@ -347,72 +327,13 @@
 </div>
 
 <style>
-  .help-tooltip {
-    position: relative;
-  }
-
-  .help-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 12px;
+  .section-title {
+    font-size: 0.75rem;
     font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .help-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .tooltip-content {
-    display: none;
-    position: absolute;
-    bottom: 100%;
-    right: 0;
-    margin-bottom: 8px;
-    padding: 12px;
-    background: rgba(30, 30, 30, 0.98);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    font-size: 11px;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.8);
-    width: 280px;
-    z-index: 100;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  }
-
-  .help-tooltip:hover .tooltip-content {
-    display: block;
-  }
-
-  .tooltip-content strong {
-    color: white;
-    display: block;
-    margin-bottom: 8px;
-  }
-
-  .tooltip-content pre {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 6px 8px;
-    border-radius: 4px;
-    margin-bottom: 8px;
-    overflow-x: auto;
-    font-size: 10px;
-  }
-
-  .tooltip-content p {
-    margin: 4px 0;
-  }
-
-  .tooltip-content p strong {
-    display: inline;
-    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0 0 0.75rem 0;
   }
 
   .export-category {
@@ -430,63 +351,59 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: rgba(255, 255, 255, 0.35);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.375rem;
   }
 
-  .export-graph-btn {
+  .data-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .data-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+  }
+
+  .data-btn.visual {
     background: rgba(147, 51, 234, 0.1);
-    border: 1px solid rgba(147, 51, 234, 0.25);
+    border-color: rgba(147, 51, 234, 0.25);
     color: rgb(196, 167, 231);
   }
 
-  .export-graph-btn:hover {
+  .data-btn.visual:hover {
     background: rgba(147, 51, 234, 0.2);
     color: rgb(216, 180, 254);
   }
 
-  /* Import 2-step flow styles */
-  .import-step {
+  .import-section {
+    margin-top: 0.5rem;
+  }
+
+  .import-buttons {
     display: flex;
-    align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0;
-  }
-
-  .step-number {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: rgba(0, 212, 255, 0.15);
-    color: #00d4ff;
-    font-size: 0.625rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .step-label {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6);
-    flex: 1;
-  }
-
-  .template-buttons {
-    display: flex;
-    gap: 0.375rem;
   }
 
   .template-btn {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0.375rem 0.5rem;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
     background: rgba(34, 197, 94, 0.1);
     border: 1px solid rgba(34, 197, 94, 0.25);
     border-radius: 6px;
     color: #22c55e;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -499,20 +416,20 @@
   .import-btn {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0.375rem 0.625rem;
-    background: rgba(0, 212, 255, 0.1);
-    border: 1px solid rgba(0, 212, 255, 0.25);
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 6px;
-    color: #00d4ff;
-    font-size: 0.6875rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.75rem;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .import-btn:hover {
-    background: rgba(0, 212, 255, 0.2);
-    border-color: rgba(0, 212, 255, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
   }
 
   .import-btn:disabled {
