@@ -456,11 +456,33 @@
   }
 
   :global(.trip-list-container) {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 200px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  /* Controls panel should shrink and scroll if needed */
+  .sidebar > :global(:last-child) {
+    flex: 0 1 auto;
+    max-height: 45%;
+    overflow-y: auto;
+  }
+
+  /* Styled scrollbar for controls */
+  .sidebar > :global(:last-child)::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar > :global(:last-child)::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+
+  .sidebar > :global(:last-child)::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
   }
 
   /* Tablet breakpoint */

@@ -485,6 +485,26 @@
     flex-direction: column;
     gap: 0.5rem;
     overflow-y: auto;
+    min-height: 120px;
+  }
+
+  /* Styled scrollbar */
+  .trips-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .trips-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+
+  .trips-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+
+  .trips-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
 
   .trip-card {
