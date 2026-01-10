@@ -188,6 +188,7 @@
     <button
       type="button"
       class="minimize-btn"
+      class:expanded={!isSidebarMinimized}
       onclick={toggleSidebar}
       title={isSidebarMinimized ? 'Expand sidebar' : 'Minimize sidebar'}
     >
@@ -197,7 +198,7 @@
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
       {:else}
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
       {/if}
@@ -333,24 +334,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 100%;
+    padding: 0.5rem;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: none;
     border-radius: 6px;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
     transition: all 0.15s ease;
     flex-shrink: 0;
   }
 
+  .minimize-btn.expanded {
+    padding: 0.25rem;
+  }
+
   .minimize-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.9);
-  }
-
-  .sidebar.minimized .minimize-btn {
-    width: 100%;
   }
 
   .location-info,
@@ -464,7 +465,7 @@
   :global(.trip-list-container) {
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
   }
