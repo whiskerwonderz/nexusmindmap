@@ -98,7 +98,7 @@
   }
 </script>
 
-<div class="traveler-view">
+<div class="traveler-view" style:grid-template-columns={isSidebarMinimized ? '1fr 48px' : '1fr 320px'}>
   <div class="main-content">
     <!-- Layout Switcher -->
     <div class="layout-switcher">
@@ -214,7 +214,7 @@
       {/if}
 
       {#if layout === 'globe'}
-        <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
+        <GlobeControls />
       {:else}
         <MapControls
           onResetView={handleResetView}
@@ -234,10 +234,10 @@
     position: absolute;
     inset: 0;
     display: grid;
-    grid-template-columns: 1fr 320px;
     gap: 1.5rem;
     padding: 1rem;
     box-sizing: border-box;
+    transition: grid-template-columns 0.2s ease;
   }
 
   .main-content {

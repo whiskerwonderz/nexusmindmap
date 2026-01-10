@@ -6,12 +6,10 @@
   import { projectStore } from '$lib/stores/projectStore.svelte';
 
   interface Props {
-    onResetView?: () => void;
-    onFocusHome?: () => void;
     class?: string;
   }
 
-  let { onResetView, onFocusHome, class: className = '' }: Props = $props();
+  let { class: className = '' }: Props = $props();
 
   let isExporting = $state(false);
 
@@ -20,10 +18,6 @@
   const animateArcs = $derived(travelerStore.animateArcs);
   const globeStyleValue = $derived(travelerStore.globeStyle);
   const displayModeValue = $derived(travelerStore.displayMode);
-  const settings = $derived(travelerStore.settings);
-  const availableYears = $derived(travelerStore.availableYears);
-  const journeyCount = $derived(travelerStore.journeyCount);
-  const destinationCount = $derived(travelerStore.destinationCount);
 
   const globeStyles: { value: GlobeStyle; label: string }[] = [
     { value: 'night', label: 'Night' },
@@ -31,11 +25,6 @@
     { value: 'satellite', label: 'Satellite' },
     { value: 'dotted', label: 'Topology' },
   ];
-
-  function handleYearChange(e: Event): void {
-    const target = e.target as HTMLSelectElement;
-    travelerStore.setYearFilter(target.value ? parseInt(target.value) : undefined);
-  }
 
   function handleExportJSON(): void {
     isExporting = true;
@@ -77,26 +66,6 @@
 
 <div class="globe-controls {className}">
   <div class="control-section">
-    <h4 class="section-title">View</h4>
-    <div class="button-group">
-      <button type="button" class="control-btn" onclick={onResetView}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
-        </svg>
-        Reset
-      </button>
-      {#if travelerStore.homeBase}
-        <button type="button" class="control-btn" onclick={onFocusHome}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
-          Home
-        </button>
-      {/if}
-    </div>
-  </div>
-
-  <div class="control-section">
     <h4 class="section-title">Display</h4>
     <div class="display-modes">
       <button
@@ -110,7 +79,6 @@
           <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
         <span class="mode-label">All</span>
-        <span class="mode-count">{journeyCount + destinationCount}</span>
       </button>
       <button
         type="button"
@@ -122,7 +90,6 @@
           <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
         </svg>
         <span class="mode-label">Journeys</span>
-        <span class="mode-count">{journeyCount}</span>
       </button>
       <button
         type="button"
@@ -135,7 +102,6 @@
           <circle cx="12" cy="10" r="3"/>
         </svg>
         <span class="mode-label">Destinations</span>
-        <span class="mode-count">{destinationCount}</span>
       </button>
     </div>
   </div>
@@ -156,25 +122,21 @@
     </div>
   </div>
 
-  {#if availableYears.length > 0}
-    <div class="control-section">
-      <h4 class="section-title">Filter by Year</h4>
-      <select class="year-select" value={settings.yearFilter ?? ''} onchange={handleYearChange}>
-        <option value="">All years</option>
-        {#each availableYears as year}<option value={year}>{year}</option>{/each}
-      </select>
-    </div>
-  {/if}
-
   <div class="control-section">
     <h4 class="section-title">Globe Style</h4>
-    <div class="globe-styles">
-      {#each globeStyles as style}
-        <button type="button" class="style-btn" class:active={globeStyleValue === style.value}
-          onclick={() => travelerStore.setGlobeStyle(style.value)}>
-          {style.label}
-        </button>
-      {/each}
+    <div class="style-dropdown">
+      <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+      <select class="style-select" value={globeStyleValue} onchange={(e) => travelerStore.setGlobeStyle((e.target as HTMLSelectElement).value as import('$lib/types/traveler').GlobeStyle)}>
+        {#each globeStyles as style}
+          <option value={style.value}>{style.label}</option>
+        {/each}
+      </select>
+      <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
     </div>
   </div>
 
@@ -243,25 +205,7 @@
     margin: 0;
   }
 
-  .button-group { display: flex; gap: 0.5rem; }
-
-  .control-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.8125rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .control-btn:hover { background: rgba(255, 255, 255, 0.1); }
-
-  .toggle-group { display: flex; flex-direction: column; gap: 0.5rem; }
+  .toggle-group { display: flex; flex-direction: row; gap: 1rem; }
 
   .toggle-item {
     display: flex;
@@ -274,36 +218,48 @@
 
   .toggle-item input { accent-color: #00d4ff; }
 
-  .year-select {
-    padding: 0.5rem;
+  /* Globe style dropdown */
+  .style-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: white;
   }
 
-  .globe-styles {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
-  }
-
-  .style-btn {
-    padding: 0.5rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+  .dropdown-icon {
+    width: 16px;
+    height: 16px;
     color: rgba(255, 255, 255, 0.7);
-    cursor: pointer;
-    transition: all 0.15s ease;
+    flex-shrink: 0;
   }
 
-  .style-btn:hover { background: rgba(255, 255, 255, 0.08); }
-
-  .style-btn.active {
-    border-color: #00d4ff;
-    background: rgba(0, 212, 255, 0.1);
+  .style-select {
+    flex: 1;
+    background: transparent;
+    border: none;
     color: white;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+  }
+
+  .style-select option {
+    background: #1a1a2e;
+    color: white;
+  }
+
+  .dropdown-arrow {
+    width: 14px;
+    height: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+    pointer-events: none;
   }
 
   /* Display mode styles */
@@ -347,19 +303,6 @@
   .mode-label {
     font-size: 0.6875rem;
     font-weight: 500;
-  }
-
-  .mode-count {
-    font-size: 0.625rem;
-    padding: 0.125rem 0.375rem;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .display-mode-btn.active .mode-count {
-    background: rgba(0, 212, 255, 0.2);
-    color: #00d4ff;
   }
 
   /* Data buttons */
