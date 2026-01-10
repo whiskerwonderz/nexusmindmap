@@ -314,7 +314,6 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    overflow: hidden;
     min-height: 0;
     transition: width 0.2s ease;
   }
@@ -322,12 +321,6 @@
   .sidebar.minimized {
     width: 48px !important;
     flex-shrink: 0;
-  }
-
-  .sidebar > :global(:last-child) {
-    flex-shrink: 0;
-    max-height: 50%;
-    overflow-y: auto;
   }
 
   .minimize-btn {
