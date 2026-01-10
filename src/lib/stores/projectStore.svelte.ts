@@ -386,6 +386,15 @@ function clearTravelerData(): void {
  * If no projects exist, creates a default one with demo data
  */
 function initialize(): void {
+  // Reload index from localStorage on client-side (SSR leaves it empty)
+  if (typeof window !== 'undefined') {
+    const savedIndex = loadIndex();
+    index.builder = savedIndex.builder;
+    index.traveler = savedIndex.traveler;
+    index.currentBuilder = savedIndex.currentBuilder;
+    index.currentTraveler = savedIndex.currentTraveler;
+  }
+
   // Create default builder project if none exist
   if (index.builder.length === 0) {
     createProjectWithDemoData();
