@@ -13,8 +13,10 @@
     nodeMap,
     selectNode,
     hoverNode,
-    updateNode
+    updateNode,
+    addEdge
   } from '$lib/stores/graph';
+  import { toastStore } from '$lib/stores/toastStore.svelte';
   import {
     layoutMode,
     layoutTrigger,
@@ -46,6 +48,12 @@
   let isAnimating = $state(false);
   let hasInitialized = false;
   let previousMode: LayoutType | null = null;
+
+  // Connection dragging state
+  let isConnecting = $state(false);
+  let connectionSource: { nodeId: string; x: number; y: number } | null = $state(null);
+  let connectionEndPos = $state({ x: 0, y: 0 });
+  let connectionTargetId: string | null = $state(null);
 
   // Cluster background data
   let clusterBackgrounds = $state<ClusterData[]>([]);
@@ -273,7 +281,16 @@
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    // Handle dragging
+    // Handle connection dragging
+    if (isConnecting && connectionSource) {
+      connectionEndPos = { x, y };
+      // Check if hovering over a potential target node (excluding source)
+      const hoveredId = findNodeAtPosition(x, y);
+      connectionTargetId = hoveredId !== connectionSource.nodeId ? hoveredId : null;
+      return; // Don't do node dragging while connecting
+    }
+
+    // Handle node dragging
     if (draggedNode) {
       updateNode(draggedNode.id, { x, y, vx: 0, vy: 0 });
     }
@@ -281,6 +298,44 @@
 
   function handleMouseUp() {
     draggedNode = null;
+
+    // Handle connection completion
+    if (isConnecting && connectionSource) {
+      if (connectionTargetId && connectionTargetId !== connectionSource.nodeId) {
+        const edgeId = addEdge(connectionSource.nodeId, connectionTargetId);
+        if (edgeId) {
+          toastStore.success('Connection created');
+        } else {
+          toastStore.error('Connection already exists');
+        }
+      }
+      // Reset connection state
+      isConnecting = false;
+      connectionSource = null;
+      connectionTargetId = null;
+    }
+  }
+
+  function handleStartConnection(nodeId: string, x: number, y: number) {
+    isConnecting = true;
+    connectionSource = { nodeId, x, y };
+    connectionEndPos = { x, y };
+    connectionTargetId = null;
+  }
+
+  function findNodeAtPosition(x: number, y: number): string | null {
+    const currentNodes = get(nodes);
+    const NODE_HIT_RADIUS = 25; // How close to node center to register as hit
+
+    for (const node of currentNodes) {
+      const dx = (node.x ?? 0) - x;
+      const dy = (node.y ?? 0) - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < NODE_HIT_RADIUS) {
+        return node.id;
+      }
+    }
+    return null;
   }
 
   function handleCanvasClick(event: MouseEvent) {
@@ -455,6 +510,21 @@
       </g>
     {/if}
 
+    <!-- Connection preview line -->
+    {#if isConnecting && connectionSource}
+      <line
+        class="connection-preview"
+        x1={connectionSource.x}
+        y1={connectionSource.y}
+        x2={connectionEndPos.x}
+        y2={connectionEndPos.y}
+        stroke="#00d4ff"
+        stroke-width="2"
+        stroke-dasharray="6,4"
+        opacity="0.8"
+      />
+    {/if}
+
     <!-- Nodes layer -->
     <g class="nodes">
       {#each $nodes as node (node.id)}
@@ -465,10 +535,12 @@
           isHovered={$hoveredNodeId === node.id}
           isConnected={$connectedNodeIds.has(node.id) && node.id !== ($hoveredNodeId ?? $selectedNodeId)}
           isDimmed={isNodeDimmed(node)}
+          isConnectionTarget={connectionTargetId === node.id}
           onmouseenter={() => hoverNode(node.id)}
           onmouseleave={() => hoverNode(null)}
           onclick={() => handleNodeClick(node.id)}
           onmousedown={(e) => handleNodeMouseDown(node, e)}
+          onStartConnection={handleStartConnection}
         />
       {/each}
     </g>
