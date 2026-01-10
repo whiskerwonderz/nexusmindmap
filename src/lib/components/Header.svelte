@@ -36,6 +36,16 @@
       <span class="logo-text">NexusMindMap</span>
       <span class="beta-badge">Beta</span>
     </a>
+    <a
+      href="mailto:whiskerwonderz001@gmail.com?subject=NexusMindMap Bug Report&body=Please describe the bug:%0A%0ABrowser:%0ASteps to reproduce:%0A"
+      class="feedback-btn"
+      title="Send feedback"
+    >
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
+      </svg>
+    </a>
 
     <!-- Project Name & Actions -->
     <div class="project-section">
@@ -65,7 +75,7 @@
       <button
         class="save-btn"
         onclick={handleSave}
-        title="Save to local browser storage (this device only)"
+        title="Save locally"
       >
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
@@ -82,18 +92,6 @@
   </div>
 
   <div class="flex items-center gap-4">
-    <!-- Bug Report -->
-    <a
-      href="mailto:whiskerwonderz001@gmail.com?subject=NexusMindMap Bug Report&body=Please describe the bug:%0A%0ABrowser:%0ASteps to reproduce:%0A"
-      class="feedback-btn"
-      title="Send feedback"
-    >
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-        <polyline points="22,6 12,13 2,6" />
-      </svg>
-    </a>
-
     <!-- Theme Switcher -->
     <ThemeSwitcher />
   </div>
@@ -185,6 +183,7 @@
     align-items: center;
     gap: 8px;
     padding: 6px 12px;
+    width: 180px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
@@ -200,10 +199,11 @@
   }
 
   .project-name {
-    max-width: 150px;
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: left;
   }
 
   .unsaved-dot {

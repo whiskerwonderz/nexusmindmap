@@ -18,6 +18,11 @@
   let isEditTripModalOpen = $state(false);
   let tripToEdit = $state<TripNode | null>(null);
   let showTripList = $state(true);
+  let isSidebarMinimized = $state(false);
+
+  function toggleSidebar(): void {
+    isSidebarMinimized = !isSidebarMinimized;
+  }
 
   // Get current layout from app store
   const layout = $derived(appStore.travelerSettings.layout);
@@ -179,24 +184,44 @@
   </div>
 
   <!-- Sidebar -->
-  <aside class="sidebar">
-    {#if showTripList}
-      <TripList
-        onTripSelect={handleTripSelect}
-        onAddTrip={openAddTripModal}
-        onEditTrip={openEditTripModal}
-        class="trip-list-container"
-      />
-    {/if}
+  <aside class="sidebar" class:minimized={isSidebarMinimized}>
+    <button
+      type="button"
+      class="minimize-btn"
+      onclick={toggleSidebar}
+      title={isSidebarMinimized ? 'Expand sidebar' : 'Minimize sidebar'}
+    >
+      {#if isSidebarMinimized}
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      {:else}
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      {/if}
+    </button>
 
-    {#if layout === 'globe'}
-      <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
-    {:else}
-      <MapControls
-        onResetView={handleResetView}
-        onFocusHome={handleFocusHome}
-        onStyleChange={handleMapStyleChange}
-      />
+    {#if !isSidebarMinimized}
+      {#if showTripList}
+        <TripList
+          onTripSelect={handleTripSelect}
+          onAddTrip={openAddTripModal}
+          onEditTrip={openEditTripModal}
+          class="trip-list-container"
+        />
+      {/if}
+
+      {#if layout === 'globe'}
+        <GlobeControls onResetView={handleResetView} onFocusHome={handleFocusHome} />
+      {:else}
+        <MapControls
+          onResetView={handleResetView}
+          onFocusHome={handleFocusHome}
+          onStyleChange={handleMapStyleChange}
+        />
+      {/if}
     {/if}
   </aside>
 </div>
@@ -290,12 +315,42 @@
     gap: 1rem;
     overflow: hidden;
     min-height: 0;
+    transition: width 0.2s ease;
+  }
+
+  .sidebar.minimized {
+    width: 48px !important;
+    flex-shrink: 0;
   }
 
   .sidebar > :global(:last-child) {
     flex-shrink: 0;
     max-height: 50%;
     overflow-y: auto;
+  }
+
+  .minimize-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .minimize-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .sidebar.minimized .minimize-btn {
+    width: 100%;
   }
 
   .location-info,

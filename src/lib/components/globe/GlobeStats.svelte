@@ -33,25 +33,7 @@
     </div>
   </div>
 
-  {#if stats.mostVisitedCountry || stats.longestTrip}
-    <div class="stats-row secondary">
-      {#if stats.mostVisitedCountry}
-        <div class="stat-card">
-          <span class="card-label">Most visited</span>
-          <span class="card-value">{stats.mostVisitedCountry.country}</span>
-          <span class="card-detail">{Math.round(stats.mostVisitedCountry.days)} days</span>
-        </div>
-      {/if}
-      {#if stats.longestTrip}
-        <div class="stat-card">
-          <span class="card-label">Longest trip</span>
-          <span class="card-value">{stats.longestTrip.label}</span>
-          <span class="card-detail">{stats.longestTrip.days} days</span>
-        </div>
-      {/if}
-    </div>
-  {/if}
-</div>
+  </div>
 
 <style>
   .globe-stats { display: flex; flex-direction: column; gap: 1rem; }
@@ -118,30 +100,4 @@
     height: 2rem;
     background: rgba(255, 255, 255, 0.1);
   }
-
-  .stats-row.secondary {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-
-  .stat-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .card-label {
-    font-size: 0.6875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: rgba(255, 255, 255, 0.4);
-  }
-
-  .card-value { font-size: 0.9375rem; font-weight: 600; color: white; }
-  .card-detail { font-size: 0.75rem; color: #fbbf24; }
 </style>

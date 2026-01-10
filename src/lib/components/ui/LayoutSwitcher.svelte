@@ -34,7 +34,7 @@
     },
     hierarchical: {
       icon: `<circle cx="12" cy="4" r="2" fill="currentColor"/><circle cx="6" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="12" r="2" fill="currentColor"/><circle cx="4" cy="20" r="1.5" fill="currentColor"/><circle cx="8" cy="20" r="1.5" fill="currentColor"/><circle cx="16" cy="20" r="1.5" fill="currentColor"/><circle cx="20" cy="20" r="1.5" fill="currentColor"/><line x1="12" y1="6" x2="6" y2="10" opacity="0.5"/><line x1="12" y1="6" x2="12" y2="10" opacity="0.5"/><line x1="12" y1="6" x2="18" y2="10" opacity="0.5"/><line x1="6" y1="14" x2="4" y2="18" opacity="0.5"/><line x1="6" y1="14" x2="8" y2="18" opacity="0.5"/><line x1="18" y1="14" x2="16" y2="18" opacity="0.5"/><line x1="18" y1="14" x2="20" y2="18" opacity="0.5"/>`,
-      label: 'Hierarchy',
+      label: 'Tree',
       description: 'Tree structure',
     },
     // Traveler layouts
@@ -103,6 +103,7 @@
   .layout-switcher {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 2px;
     padding: 4px;
     border-radius: 10px;
