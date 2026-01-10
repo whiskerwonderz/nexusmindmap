@@ -15,8 +15,9 @@ import { DEFAULT_BUILDER_SETTINGS } from '$lib/types/builder';
 import type { TripNode, TravelerSettings } from '$lib/types/traveler';
 import { DEFAULT_TRAVELER_SETTINGS } from '$lib/types/traveler';
 import type { Edge } from '$lib/types/common';
+import { get } from 'svelte/store';
 import { appStore } from './appStore.svelte';
-import { loadData as loadGraphData, clear as clearGraph } from './graph';
+import { loadData as loadGraphData, clear as clearGraph, nodes as graphNodes, edges as graphEdges } from './graph';
 import { forceRelayout } from './layout';
 
 // Import demo data
@@ -176,16 +177,36 @@ function saveCurrentProject(mode: 'builder' | 'traveler'): void {
   const updatedMeta = { ...meta, updatedAt: now };
 
   if (mode === 'builder') {
-    const nodes = appStore.allNodes.filter(
-      (n): n is BuilderNode => n.sourceMode === 'builder'
-    );
+    // Read from graph store (where AddNodeModal writes) instead of appStore
+    const currentGraphNodes = get(graphNodes);
+    const currentGraphEdges = get(graphEdges);
+
+    // Convert GraphNode to BuilderNode
+    const nodes: BuilderNode[] = currentGraphNodes.map(n => ({
+      id: n.id,
+      label: n.label,
+      type: n.type,
+      description: n.description,
+      date: n.date,
+      url: n.url,
+      parent: n.parent,
+      sourceMode: 'builder' as const,
+      metadata: {},
+    }));
+
+    // Convert GraphEdge to Edge
+    const edges: Edge[] = currentGraphEdges.map(e => ({
+      id: e.id,
+      source: e.from,
+      target: e.to,
+      label: e.label,
+    }));
+
     const project: BuilderProject = {
       ...updatedMeta,
       mode: 'builder',
       nodes,
-      edges: appStore.edges.filter(e =>
-        nodes.some(n => n.id === e.source || n.id === e.target)
-      ),
+      edges,
       settings: appStore.builderSettings,
     };
     saveProject(getStorageKey('builder', currentId), project);
