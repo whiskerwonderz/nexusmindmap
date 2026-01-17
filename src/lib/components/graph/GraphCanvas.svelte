@@ -235,7 +235,11 @@
   }
 
   function animateToPositions(targetNodes: GraphNodeType[]) {
-    if (isAnimating) return;
+    // Cancel any existing animation
+    if (animationFrame) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
 
     const startNodes = get(nodes).map(n => ({ ...n }));
     const duration = 600;
@@ -277,10 +281,12 @@
       simulation.stop();
       isRunning = false;
     }
-    if (animationFrame && !isAnimating) {
+    // Always cancel animation frame and reset animating state
+    if (animationFrame) {
       cancelAnimationFrame(animationFrame);
       animationFrame = null;
     }
+    isAnimating = false;
   }
 
   function startSimulation() {
