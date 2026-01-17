@@ -365,6 +365,12 @@ export async function importNodesFromCSV(file: File): Promise<{ nodes: GraphNode
         }
 
         const validTypes = ['goal', 'skill', 'project', 'source', 'cert', 'concept'];
+        // Map alternative type names to valid types
+        const typeAliases: Record<string, string> = {
+          'milestone': 'cert',
+          'resource': 'source',
+          'note': 'concept',
+        };
         const nodes: GraphNode[] = [];
         const edgePairs: Array<{ from: string; toLabel: string }> = [];
 
@@ -375,8 +381,12 @@ export async function importNodesFromCSV(file: File): Promise<{ nodes: GraphNode
           const label = row[labelCol];
           if (!label || label.trim() === '') continue;
 
-          // Parse type
+          // Parse type with alias support
           let nodeType = typeCol !== -1 ? row[typeCol]?.toLowerCase().trim() : 'concept';
+          // Check for type aliases first
+          if (typeAliases[nodeType]) {
+            nodeType = typeAliases[nodeType];
+          }
           if (!validTypes.includes(nodeType)) {
             nodeType = 'concept'; // Default to concept if invalid type
           }
