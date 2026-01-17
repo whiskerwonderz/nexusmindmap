@@ -1,5 +1,6 @@
 <script lang="ts">
   import { nodes, edges, nodesByType, selectNode, selectedNodeId, loadData, clear } from '$lib/stores/graph';
+  import { forceRelayout } from '$lib/stores/layout';
   import { appStore } from '$lib/stores/appStore.svelte';
   import { themeState } from '$lib/stores/theme.svelte';
   import { getNodeColor } from '$lib/themes';
@@ -65,6 +66,9 @@
         nodes: result.nodes,
         edges: result.edges,
       });
+
+      // Trigger layout recalculation after import
+      forceRelayout();
 
       toastStore.success(`Imported ${result.nodes.length} nodes and ${result.edges.length} connections`);
     } catch (error) {

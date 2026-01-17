@@ -386,8 +386,12 @@ export async function importNodesFromCSV(file: File): Promise<{ nodes: GraphNode
           // Get center coordinates for positioning
           const centerX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500;
           const centerY = typeof window !== 'undefined' ? window.innerHeight / 2 : 300;
+
+          // Use larger radius based on node count for better initial spread
+          const nodeCount = lines.length - 1; // Subtract header
+          const baseRadius = Math.max(200, Math.sqrt(nodeCount) * 40);
           const angle = (i / lines.length) * Math.PI * 2;
-          const radius = 100 + Math.random() * 80;
+          const radius = baseRadius + Math.random() * baseRadius * 0.5;
 
           const node: GraphNode = {
             id: nodeId,

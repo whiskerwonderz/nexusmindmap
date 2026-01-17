@@ -39,6 +39,7 @@
   import type { GraphNode as GraphNodeType, Simulation, LayoutType, ClusterData } from '$lib/types';
 
   let svgElement: SVGSVGElement;
+  let gElement: SVGGElement;
   let width = $state(800);
   let height = $state(600);
   let simulation: Simulation | null = null;
@@ -49,6 +50,11 @@
   let hasInitialized = false;
   let previousMode: LayoutType | null = null;
 
+  // Pan/Zoom state
+  let transform = $state({ x: 0, y: 0, scale: 1 });
+  let isPanning = $state(false);
+  let panStart = { x: 0, y: 0 };
+
   // Connection dragging state
   let isConnecting = $state(false);
   let connectionSource: { nodeId: string; x: number; y: number } | null = $state(null);
@@ -57,6 +63,47 @@
 
   // Cluster background data
   let clusterBackgrounds = $state<ClusterData[]>([]);
+
+  // Fit all nodes in view
+  export function fitToView() {
+    const currentNodes = get(nodes);
+    if (currentNodes.length === 0) return;
+
+    // Calculate bounding box
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    currentNodes.forEach(node => {
+      const x = node.x ?? 0;
+      const y = node.y ?? 0;
+      minX = Math.min(minX, x - 50);
+      maxX = Math.max(maxX, x + 50);
+      minY = Math.min(minY, y - 50);
+      maxY = Math.max(maxY, y + 50);
+    });
+
+    const boxWidth = maxX - minX;
+    const boxHeight = maxY - minY;
+    const padding = 60;
+
+    // Calculate scale to fit
+    const scaleX = (width - padding * 2) / boxWidth;
+    const scaleY = (height - padding * 2) / boxHeight;
+    const newScale = Math.min(scaleX, scaleY, 1.5); // Max zoom 1.5x
+
+    // Calculate center offset
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    transform = {
+      x: width / 2 - centerX * newScale,
+      y: height / 2 - centerY * newScale,
+      scale: newScale
+    };
+  }
+
+  // Reset view to default
+  export function resetView() {
+    transform = { x: 0, y: 0, scale: 1 };
+  }
 
   onMount(() => {
     // Update dimensions
@@ -81,6 +128,8 @@
         applyCurrentLayout(mode);
         hasInitialized = true;
         previousMode = mode;
+        // Auto fit to view after initial layout
+        setTimeout(() => fitToView(), 700);
       }
     }, 100);
 
@@ -88,6 +137,8 @@
     const unsubscribeMode = layoutMode.subscribe((mode) => {
       if (hasInitialized && previousMode !== null && previousMode !== mode) {
         applyCurrentLayout(mode);
+        // Auto fit to view after layout change
+        setTimeout(() => fitToView(), 700);
       }
       previousMode = mode;
     });
@@ -104,6 +155,8 @@
       const mode = get(layoutMode);
       if (currentNodes.length > 0 && width > 0 && height > 0) {
         applyCurrentLayout(mode);
+        // Auto fit to view after new data loaded
+        setTimeout(() => fitToView(), 700);
       }
     });
 
@@ -263,6 +316,34 @@
     animate();
   }
 
+  // Transform screen coordinates to graph coordinates
+  function screenToGraph(screenX: number, screenY: number): { x: number; y: number } {
+    return {
+      x: (screenX - transform.x) / transform.scale,
+      y: (screenY - transform.y) / transform.scale
+    };
+  }
+
+  // Handle mouse wheel for zoom
+  function handleWheel(event: WheelEvent) {
+    event.preventDefault();
+    const rect = svgElement.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    // Zoom factor
+    const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.max(0.1, Math.min(3, transform.scale * zoomFactor));
+
+    // Zoom towards mouse position
+    const scaleChange = newScale / transform.scale;
+    transform = {
+      x: mouseX - (mouseX - transform.x) * scaleChange,
+      y: mouseY - (mouseY - transform.y) * scaleChange,
+      scale: newScale
+    };
+  }
+
   function handleNodeMouseDown(node: GraphNodeType, event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
@@ -274,29 +355,53 @@
     }
   }
 
+  // Start panning with middle mouse or when clicking on background
+  function handleCanvasMouseDown(event: MouseEvent) {
+    // Middle mouse button or background click for panning
+    if (event.button === 1) {
+      event.preventDefault();
+      isPanning = true;
+      panStart = { x: event.clientX - transform.x, y: event.clientY - transform.y };
+    }
+  }
+
   function handleMouseMove(event: MouseEvent) {
     if (!svgElement) return;
 
     const rect = svgElement.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const screenX = event.clientX - rect.left;
+    const screenY = event.clientY - rect.top;
 
-    // Handle connection dragging
+    // Handle panning
+    if (isPanning) {
+      transform = {
+        ...transform,
+        x: event.clientX - panStart.x,
+        y: event.clientY - panStart.y
+      };
+      return;
+    }
+
+    // Transform to graph coordinates for connection and dragging
+    const { x, y } = screenToGraph(screenX, screenY);
+
+    // Handle connection dragging (use screen coords for the preview line)
     if (isConnecting && connectionSource) {
-      connectionEndPos = { x, y };
+      connectionEndPos = { x: screenX, y: screenY };
       // Check if hovering over a potential target node (excluding source)
       const hoveredId = findNodeAtPosition(x, y);
       connectionTargetId = hoveredId !== connectionSource.nodeId ? hoveredId : null;
       return; // Don't do node dragging while connecting
     }
 
-    // Handle node dragging
+    // Handle node dragging (use graph coordinates)
     if (draggedNode) {
       updateNode(draggedNode.id, { x, y, vx: 0, vy: 0 });
     }
   }
 
   function handleMouseUp() {
+    isPanning = false;
     draggedNode = null;
 
     // Handle connection completion
@@ -318,14 +423,18 @@
 
   function handleStartConnection(nodeId: string, x: number, y: number) {
     isConnecting = true;
-    connectionSource = { nodeId, x, y };
-    connectionEndPos = { x, y };
+    // Convert graph coords to screen coords for the preview line
+    const screenX = x * transform.scale + transform.x;
+    const screenY = y * transform.scale + transform.y;
+    connectionSource = { nodeId, x: screenX, y: screenY };
+    connectionEndPos = { x: screenX, y: screenY };
     connectionTargetId = null;
   }
 
+  // Find node at graph coordinates
   function findNodeAtPosition(x: number, y: number): string | null {
     const currentNodes = get(nodes);
-    const NODE_HIT_RADIUS = 25; // How close to node center to register as hit
+    const NODE_HIT_RADIUS = 25 / transform.scale; // Adjust for zoom
 
     for (const node of currentNodes) {
       const dx = (node.x ?? 0) - x;
@@ -342,6 +451,14 @@
     const target = event.target as Element;
     if (target === svgElement || target.tagName === 'rect' || target.tagName === 'pattern') {
       selectNode(null);
+    }
+  }
+
+  // Handle double-click to fit view
+  function handleDoubleClick(event: MouseEvent) {
+    const target = event.target as Element;
+    if (target === svgElement || target.tagName === 'rect' || target.tagName === 'pattern') {
+      fitToView();
     }
   }
 
@@ -451,9 +568,12 @@
     class="w-full h-full"
     viewBox="0 0 {width} {height}"
     onclick={handleCanvasClick}
+    ondblclick={handleDoubleClick}
+    onmousedown={handleCanvasMouseDown}
     onmousemove={handleMouseMove}
+    onwheel={handleWheel}
   >
-    <!-- Background grid -->
+    <!-- Background grid (not transformed) -->
     <defs>
       <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
         <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1" />
@@ -461,56 +581,7 @@
     </defs>
     <rect {width} {height} fill="url(#grid)" />
 
-    <!-- Cluster backgrounds (only in cluster mode) -->
-    {#if $layoutMode === 'cluster' && clusterBackgrounds.length > 0}
-      <ClusterBackgrounds
-        clusters={clusterBackgrounds}
-        onClusterFocus={handleClusterFocus}
-        onClusterExpand={handleClusterExpand}
-        onClusterDrag={handleClusterDrag}
-      />
-    {/if}
-
-    <!-- Radial glow centered on goal node -->
-    {#each $nodes.filter((n) => n.type === 'goal') as goalNode}
-      <defs>
-        <radialGradient id="center-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color={getNodeColor(themeState.currentTheme, 'goal')} stop-opacity="0.08" />
-          <stop offset="100%" stop-color={getNodeColor(themeState.currentTheme, 'goal')} stop-opacity="0" />
-        </radialGradient>
-      </defs>
-      <circle
-        cx={goalNode.x ?? width / 2}
-        cy={goalNode.y ?? height / 2}
-        r={Math.min(width, height) * 0.4}
-        fill="url(#center-glow)"
-        class="pointer-events-none"
-      />
-    {/each}
-
-    <!-- Edges layer (hidden in cluster mode) -->
-    {#if $layoutMode !== 'cluster'}
-      <g class="edges">
-        {#each $edges as edge (edge.id)}
-          {@const map = $nodeMap}
-          {@const sourceNode = map.get(edge.from)}
-          {@const targetNode = map.get(edge.to)}
-          {#if sourceNode && targetNode}
-            <GraphEdge
-              {edge}
-              {sourceNode}
-              {targetNode}
-              isHighlighted={$connectedNodeIds.has(edge.from) && $connectedNodeIds.has(edge.to)}
-              color={getEdgeColor(edge.from)}
-              clusters={[]}
-              enableBundling={false}
-            />
-          {/if}
-        {/each}
-      </g>
-    {/if}
-
-    <!-- Connection preview line -->
+    <!-- Connection preview line (not transformed - uses screen coords) -->
     {#if isConnecting && connectionSource}
       <line
         class="connection-preview"
@@ -525,24 +596,76 @@
       />
     {/if}
 
-    <!-- Nodes layer -->
-    <g class="nodes">
-      {#each $nodes as node (node.id)}
-        <GraphNode
-          {node}
-          color={getNodeColor(themeState.currentTheme, node.type)}
-          isSelected={$selectedNodeId === node.id}
-          isHovered={$hoveredNodeId === node.id}
-          isConnected={$connectedNodeIds.has(node.id) && node.id !== ($hoveredNodeId ?? $selectedNodeId)}
-          isDimmed={isNodeDimmed(node)}
-          isConnectionTarget={connectionTargetId === node.id}
-          onmouseenter={() => hoverNode(node.id)}
-          onmouseleave={() => hoverNode(null)}
-          onclick={() => handleNodeClick(node.id)}
-          onmousedown={(e) => handleNodeMouseDown(node, e)}
-          onStartConnection={handleStartConnection}
+    <!-- Transformed group for graph content -->
+    <g bind:this={gElement} transform="translate({transform.x}, {transform.y}) scale({transform.scale})">
+      <!-- Cluster backgrounds (only in cluster mode) -->
+      {#if $layoutMode === 'cluster' && clusterBackgrounds.length > 0}
+        <ClusterBackgrounds
+          clusters={clusterBackgrounds}
+          onClusterFocus={handleClusterFocus}
+          onClusterExpand={handleClusterExpand}
+          onClusterDrag={handleClusterDrag}
+        />
+      {/if}
+
+      <!-- Radial glow centered on goal node -->
+      {#each $nodes.filter((n) => n.type === 'goal') as goalNode}
+        <defs>
+          <radialGradient id="center-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color={getNodeColor(themeState.currentTheme, 'goal')} stop-opacity="0.08" />
+            <stop offset="100%" stop-color={getNodeColor(themeState.currentTheme, 'goal')} stop-opacity="0" />
+          </radialGradient>
+        </defs>
+        <circle
+          cx={goalNode.x ?? width / 2}
+          cy={goalNode.y ?? height / 2}
+          r={Math.min(width, height) * 0.4}
+          fill="url(#center-glow)"
+          class="pointer-events-none"
         />
       {/each}
+
+      <!-- Edges layer (hidden in cluster mode) -->
+      {#if $layoutMode !== 'cluster'}
+        <g class="edges">
+          {#each $edges as edge (edge.id)}
+            {@const map = $nodeMap}
+            {@const sourceNode = map.get(edge.from)}
+            {@const targetNode = map.get(edge.to)}
+            {#if sourceNode && targetNode}
+              <GraphEdge
+                {edge}
+                {sourceNode}
+                {targetNode}
+                isHighlighted={$connectedNodeIds.has(edge.from) && $connectedNodeIds.has(edge.to)}
+                color={getEdgeColor(edge.from)}
+                clusters={[]}
+                enableBundling={false}
+              />
+            {/if}
+          {/each}
+        </g>
+      {/if}
+
+      <!-- Nodes layer -->
+      <g class="nodes">
+        {#each $nodes as node (node.id)}
+          <GraphNode
+            {node}
+            color={getNodeColor(themeState.currentTheme, node.type)}
+            isSelected={$selectedNodeId === node.id}
+            isHovered={$hoveredNodeId === node.id}
+            isConnected={$connectedNodeIds.has(node.id) && node.id !== ($hoveredNodeId ?? $selectedNodeId)}
+            isDimmed={isNodeDimmed(node)}
+            isConnectionTarget={connectionTargetId === node.id}
+            onmouseenter={() => hoverNode(node.id)}
+            onmouseleave={() => hoverNode(null)}
+            onclick={() => handleNodeClick(node.id)}
+            onmousedown={(e) => handleNodeMouseDown(node, e)}
+            onStartConnection={handleStartConnection}
+          />
+        {/each}
+      </g>
     </g>
   </svg>
 </div>
@@ -557,5 +680,10 @@
   svg {
     display: block;
     background-color: var(--color-background);
+    cursor: grab;
+  }
+
+  svg:active {
+    cursor: grabbing;
   }
 </style>
