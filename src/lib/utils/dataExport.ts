@@ -41,15 +41,16 @@ function downloadFile(content: string, filename: string, mimeType: string): void
 
 /**
  * Download CSV template for Builder mode nodes
+ * The "connections" column uses semicolon-separated labels of other nodes to create edges
  */
 export function downloadBuilderNodesTemplate(): void {
-  const template = `id,type,label,description,date,url,tags
-node-1,goal,Learn TypeScript,Master TypeScript for web development,2024-01,https://typescriptlang.org,"programming,typescript"
-node-2,skill,JavaScript,Frontend scripting language,2023-06,,web
-node-3,project,Portfolio Website,Personal portfolio built with SvelteKit,2024-03,https://myportfolio.com,
-node-4,resource,TypeScript Handbook,Official TypeScript documentation,2024-01,https://typescriptlang.org/docs,docs
-node-5,concept,Type Safety,Compile-time type checking,,,programming
-node-6,note,Meeting Notes,Notes from weekly standup,2024-03-15,,`;
+  const template = `label,type,description,date,url,connections
+Learn TypeScript,goal,Master TypeScript for web development,2024-01,https://typescriptlang.org,JavaScript;Type Safety
+JavaScript,skill,Frontend scripting language,2023-06,,
+Portfolio Website,project,Personal portfolio built with SvelteKit,2024-03,https://myportfolio.com,JavaScript;Learn TypeScript
+TypeScript Handbook,source,Official TypeScript documentation,2024-01,https://typescriptlang.org/docs,Learn TypeScript
+Type Safety,concept,Compile-time type checking,,,JavaScript
+React Certification,cert,Frontend framework certification,2024-02,,JavaScript`;
 
   downloadFile(template, 'nexusmind-nodes-template.csv', 'text/csv');
 }
